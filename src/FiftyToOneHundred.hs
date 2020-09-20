@@ -5,6 +5,7 @@ import EarlyProblems (maximumPathPyramid)
 import EarlyProblems as Funcs
 import qualified Data.Map as M
 import Data.Foldable (foldl')
+import Data.Maybe (mapMaybe)
 
 -- which prime, below one-million, can be written as the sum of the most consecutive primes?
 --
@@ -28,17 +29,23 @@ import Data.Foldable (foldl')
 -- is the sum of another prime range R'. If so, the length of the range is index(R) - index(R'). Check this for
 problem50 :: Integer
 problem50 =
-  fst $ M.foldl largestRange (-1, 0) primesLessThanOneMM
+  fst $ foldl largestRange (-1, 0) $ filter (> 900000) primesLessThanOneMM
   where
     probableMaxPrimeValue = 25000
     primesLessThanOneMM = takeWhile (< 1000000) Funcs.primes
     primesLessThanProbableMax = filter (< probableMaxPrimeValue) primesLessThanOneMM
 
     primeRanges = funcOfRanges (+) primesLessThanProbableMax
+    rangeList = M.toList primeRanges
 
     largestRange (currentMax, rangeLength) p = let
-      match k =  (\len -> ((primeRanges M.! k) - len) )<$> M.lookup (k - p) primeRanges
-      matches = M.filterWithKey (\k _ -> match k) primeRanges
+      match (k, kLen) =  (\len -> kLen - len ) <$> M.lookup (k - p) primeRanges
+      matches = mapMaybe match rangeList
+      in case matches of
+        [] -> (currentMax, rangeLength)
+        _ -> if maximum matches > rangeLength
+             then (p, maximum matches)
+             else (currentMax, rangeLength)
 
       -- Given the prime P, check all primes in the possible range for summations.
 

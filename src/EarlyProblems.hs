@@ -681,10 +681,3 @@ problem49 = filter isArithmeticSequence .
        isArithmeticSequence (a:b:c:rest) =
            b-a == c-b && isArithmeticSequence (b:c:rest)
        isArithmeticSequence _ = False
-
-problem50 :: [Integer]
-problem50 = primesBelow
-    where
-        cap = 1000
-        primesBelow = reverse $ takeWhile (< cap) primes
-
