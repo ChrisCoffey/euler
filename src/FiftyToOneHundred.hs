@@ -3,6 +3,7 @@ module FiftyToOneHundred where
 import qualified Info.FiftyToOneHundred  as DATA
 import EarlyProblems (maximumPathPyramid)
 import EarlyProblems as Funcs
+import qualified Primes
 import qualified Data.Map as M
 import Data.Foldable (foldl')
 import Data.Maybe (mapMaybe)
@@ -32,7 +33,7 @@ problem50 =
   fst $ foldl largestRange (-1, 0) $ filter (> 900000) primesLessThanOneMM
   where
     probableMaxPrimeValue = 25000
-    primesLessThanOneMM = takeWhile (< 1000000) Funcs.primes
+    primesLessThanOneMM = takeWhile (< 1000000) Primes.primes
     primesLessThanProbableMax = filter (< probableMaxPrimeValue) primesLessThanOneMM
 
     primeRanges = funcOfRanges (+) primesLessThanProbableMax
@@ -49,6 +50,49 @@ problem50 =
 
       -- Given the prime P, check all primes in the possible range for summations.
 
+
+-- Find the smallest prime by which replacing part of the number with the same digit it creates
+-- an eight prime value family.
+--
+-- They must all be the same length, b/c only swaps are allowed (no deletions or insertions)
+-- The same index must be swapped in each number
+--
+-- It can be solved by iterating through each prime & swapping out each set of digits, but that has terrible
+-- performance. Instead, try first
+problem51 :: Integer
+problem51 = 42
+
+
+-- Find the smallest number where 1->6 xN all use the same digits
+--
+-- This could be a brute-force search via a sieving algorithm, but maybe there's
+-- a more efficient way to address this problem.
+problem52 :: Integer
+problem52 = 0
+
+-- How many values of N-choose-R for N <= 100 are greater than 1M?
+-- This is pretty simple to compute thanks to Haskell's arbitrary sized integers, but not
+-- very interesting.
+--
+-- Its possible to adapt the n choose r formula into a far more efficient constrction,
+-- particularly if you're performing an exhaustive search like this problem demands. But,
+-- binomial coefficients also form pascal's triangle, so by computing that it saves a whole
+-- bunch of CPU cycles, at the cost of a slightly more complex algorithm
+problem53 :: Int
+problem53 =  length $ filter (> 1000000) [
+  (factorial n) `div` ((factorial r) * factorial (n - r)) |
+    n <- [1..100],
+    r <- [1..n]
+  ]
+
+problem53' :: Int
+problem53' = length $ filter (> 1000000) [
+  nChoose n (r - 1) |
+  n <- [1..100],
+  r <- [1..n]
+  ]
+  nChoose n 0 = n
+  nChoose n i = ((n - i) / (i+1)) * nChoose n (i - 1)
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
