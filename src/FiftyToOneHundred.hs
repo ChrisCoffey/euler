@@ -91,8 +91,9 @@ problem53' = length $ filter (> 1000000) [
   n <- [1..100],
   r <- [1..n]
   ]
-  nChoose n 0 = n
-  nChoose n i = ((n - i) / (i+1)) * nChoose n (i - 1)
+  where
+    nChoose n 0 = n
+    nChoose n i = ((n - i) / (i+1)) * nChoose n (i - 1)
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
