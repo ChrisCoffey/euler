@@ -5,8 +5,9 @@ import EarlyProblems (maximumPathPyramid)
 import EarlyProblems as Funcs
 import qualified Primes
 import qualified Data.Map as M
-import Data.Foldable (foldl')
-import Data.Maybe (mapMaybe)
+import Data.Foldable (foldl', find)
+import Data.List (sort)
+import Data.Maybe (mapMaybe, fromMaybe)
 
 -- which prime, below one-million, can be written as the sum of the most consecutive primes?
 --
@@ -67,8 +68,12 @@ problem51 = 42
 --
 -- This could be a brute-force search via a sieving algorithm, but maybe there's
 -- a more efficient way to address this problem.
-problem52 :: Integer
-problem52 = 0
+problem52 :: Int
+problem52 =
+  fromMaybe 0 $ find sameDigitsRange [1..]
+  where
+    sameDigits l r =  ( sort  $ digits l ) == ( sort  $ digits r )
+    sameDigitsRange l = all id $ (\i -> sameDigits l (l * i )) <$> [2..6]
 
 -- How many values of N-choose-R for N <= 100 are greater than 1M?
 -- This is pretty simple to compute thanks to Haskell's arbitrary sized integers, but not
