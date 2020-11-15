@@ -6,8 +6,9 @@ import EarlyProblems as Funcs
 import qualified Primes
 import qualified Data.Map as M
 import Data.Foldable (foldl', find)
-import Data.List (sort)
+import Data.List (sort, group)
 import Data.Maybe (mapMaybe, fromMaybe)
+import Math
 
 -- which prime, below one-million, can be written as the sum of the most consecutive primes?
 --
@@ -62,6 +63,18 @@ problem50 =
 -- performance. Instead, try first
 problem51 :: Integer
 problem51 = 42
+  where
+    primesLessThanOneMM = takeWhile (<= 1000000) primes
+
+    nontrivialGroups :: [Integer] -> [(Integer, Int)]
+    nontrivialGroups = fmap (\x -> (head x, length x)) . filter ( (>= 2) . length) . group . sort
+
+    swapIndices ls = let
+      indicesToSwap = fmap snd <$> choose (length ls) ls
+
+
+
+
 
 
 -- Find the smallest number where 1->6 xN all use the same digits
