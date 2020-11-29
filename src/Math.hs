@@ -1,5 +1,8 @@
 module Math where
 
+import qualified Data.Set as Set
+import Data.List (sort, group)
+
 -- Produce the in-order "choose" selections from a list
 choose ::
   Int
@@ -36,3 +39,13 @@ indexesFor :: (Eq a) =>
 indexesFor ls toFind =
   map snd . filter ((== toFind) . fst) $ zip ls [0..]
 
+-- Returns a list of all values occuring more than once
+duplicates :: (Eq a, Ord a) =>
+  [a]
+  -> [a]
+duplicates = map head . filter ((>= 2) . length). group . sort
+
+unique :: (Eq a, Ord a) =>
+  [a]
+  -> [a]
+unique = Set.toList . Set.fromList

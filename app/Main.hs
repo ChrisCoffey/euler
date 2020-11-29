@@ -3,4 +3,4 @@ module Main where
 import FiftyToOneHundred
 
 main :: IO ()
-main = print problem50
+main = print problem51
