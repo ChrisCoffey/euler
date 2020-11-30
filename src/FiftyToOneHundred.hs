@@ -5,6 +5,7 @@ import EarlyProblems (maximumPathPyramid)
 import EarlyProblems as Funcs
 import qualified Primes
 import qualified Data.Map as M
+import qualified Data.Set as S
 import Data.Foldable (foldl', find)
 import Data.List (sort, sortOn, group)
 import Data.Maybe (mapMaybe, fromMaybe)
@@ -262,6 +263,28 @@ problem54 = do
     compareHighCards (l:ls) (r:rs)
       | l == r = compareHighCards ls rs
       | otherwise = l > r
+
+-- Determine the Lychrel numbers below 10k.
+--
+-- I'm approaching this as a dynamic programming problem, where each loop's Lychrel-ness is stored in
+-- a map and checked before performing the ops. Although even then, because the check is capped at 50
+-- iterations, this is only 500k steps
+problem55 :: Int
+problem55 = let
+  lychrelCount = length . filter id $ map (checkPalindromeCycle 1) [1..10000::Integer]
+  in lychrelCount
+  where
+    -- Initialize an array of boolean values
+    -- Whenever a value is found to be Lychrel, increment the counter
+    checkPalindromeCycle 50 x = not . palindromeNumber $ lychrelStep x
+    checkPalindromeCycle iters x = let
+      atStep = lychrelStep x
+      in if palindromeNumber atStep then False else checkPalindromeCycle (iters + 1) atStep
+
+    lychrelStep x = x + reverseNumber 10 x
+
+
+
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
