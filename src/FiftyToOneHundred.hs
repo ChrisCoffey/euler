@@ -283,7 +283,25 @@ problem55 = let
 
     lychrelStep x = x + reverseNumber 10 x
 
+-- Maximal digit sum. Given two numbers a,b < 100, what a^b produces a number with the largest sum of its digits?
+--
+-- This is likely a large number raised to a large power
+problem56 :: Integer
+problem56 = head . reverse $ sort [ (sum . iDigits $ a^b) | a <- [90..99], b <- [90..99] ]
 
+
+-- The sqrt of 2 expressed as nested fractions happens to have an inductive algorithm for calculating the n+1-th
+-- fraction.
+--
+-- Given numerator(n) and denom(n), numerator(n+1) = 2*denom(n) + numerator(n), denom(n+1) = denom(n) + numerator(n)
+--
+-- This was fun, if only because it required working around floating-point issues
+problem57 =
+  length . filter largerNum . take 1000 $ iterate step (3::Integer, 2::Integer)
+  where
+    step (num, denom) = (num + (2*denom), num+denom)
+
+    largerNum (num, denom) = intLog10 num > intLog10 denom
 
 
 problem67 :: Integer

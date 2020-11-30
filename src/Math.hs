@@ -1,7 +1,10 @@
+{-# GHC_OPTIONS MagicHash #-}
 module Math where
 
 import qualified Data.Set as Set
 import Data.List (sort, group)
+import GHC.Integer.Logarithms
+import GHC.Exts
 
 -- Produce the in-order "choose" selections from a list
 choose ::
@@ -49,3 +52,8 @@ unique :: (Eq a, Ord a) =>
   [a]
   -> [a]
 unique = Set.toList . Set.fromList
+
+intLog10 :: Integer -> Int
+intLog10 n = I# (integerLogBase# 10 n)
+-- The I# boxes the returned unboxed integer
+-- This requires the MagicHash extension to work properly, otherwise # is interpreted as a variable
