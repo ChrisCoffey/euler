@@ -7,7 +7,7 @@ import qualified Primes
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Foldable (foldl', find)
-import Data.List (sort, sortOn, group)
+import Data.List (sort, sortOn, group, find)
 import Data.Maybe (mapMaybe, fromMaybe)
 import Math
 
@@ -303,6 +303,21 @@ problem57 =
 
     largerNum (num, denom) = intLog10 num > intLog10 denom
 
+data PrimeSpiral = PrimeSpiral {sideLen :: Int, psNumPrimes:: Int} deriving (Show)
+
+-- problem58 :: Maybe PrimeSpiral
+problem58 =
+  find ( (< 0.10) . ratio). iterate computeLayer $ PrimeSpiral {sideLen= 3, psNumPrimes= 3}
+  where
+    ratio (PrimeSpiral n pxs) = fromIntegral pxs / fromIntegral (2 * n - 1)
+    computeLayer spiralState = let
+      sideLen' = sideLen spiralState + 2
+      lowerRight = sideLen' ^ 2
+      others = (\x -> lowerRight - (sideLen' -1) * x) <$> [1..3]
+      numPrimes = length . filter (isPrime . fromIntegral) $ lowerRight:others
+      in PrimeSpiral {sideLen= sideLen spiralState + 2,
+                      psNumPrimes= psNumPrimes spiralState + numPrimes
+                     }
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
