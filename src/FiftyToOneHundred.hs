@@ -7,8 +7,10 @@ import qualified Primes
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Foldable (foldl', find)
-import Data.List (sort, sortOn, group, find)
+import Data.List (sort, sortOn, group, find, intersect)
 import Data.Maybe (mapMaybe, fromMaybe)
+import Data.Bits
+import Data.Char (ord, chr)
 import Math
 
 -- which prime, below one-million, can be written as the sum of the most consecutive primes?
@@ -318,6 +320,31 @@ problem58 =
       in PrimeSpiral {sideLen= sideLen spiralState + 2,
                       psNumPrimes= psNumPrimes spiralState + numPrimes
                      }
+
+-- Fun "Find the key" problem. I approached this by first determining how to evaluate a key's "goodness",
+-- then relying on my own observation to select the correct key. From there's is just a mechanical process
+-- to extract the sum
+problem59 :: IO Int
+problem59 = do
+  contents <- readFile "src/Info/p059_cipher.txt"
+  let charCodes = codes contents
+      candidateKeys = filter (containsAClue . decode charCodes) allKeys
+      messages = (\key -> (key, take 10 $ decode charCodes key)) <$> candidateKeys
+  -- print messages
+  let properKey = [101, 120, 112]
+      fullMessage = decode charCodes properKey
+      charSum = sum $ ord <$> unwords fullMessage
+  print $ unwords fullMessage
+  pure charSum
+  where
+  codes :: String -> [Int]
+  codes = map read . words . fmap (\c -> if c == ',' then ' ' else c)
+  decode message key = words . map chr $ zipWith xor message (concat $ repeat key)
+
+  allKeys = [[a, b, c] | a <- [97..122], b <- [97..122], c <- [97..122]]
+  clues = ["and", "the", "of"]
+  containsAClue = not . null . intersect clues
+
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
