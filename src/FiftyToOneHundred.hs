@@ -6,6 +6,7 @@ import EarlyProblems as Funcs
 import qualified Primes
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.Sequence as Seq
 import Data.Foldable (foldl', find)
 import Data.List (sort, sortOn, group, find, intersect)
 import Data.Maybe (mapMaybe, fromMaybe)
@@ -345,6 +346,45 @@ problem59 = do
   clues = ["and", "the", "of"]
   containsAClue = not . null . intersect clues
 
+
+-- Find the first prime group of 5 elements with the "concat" property
+--
+-- The property says that each element in the group, when concatinated with another
+-- from the group form a prime. The order and elements do not matter.
+--
+-- It follows from this property's definiton that removing one of the primes from the group
+-- does not break the concatination property. This new property means the groups of primes
+-- can be built up inductively by the following algorithm:
+--
+-- primes = Generate a sorted list of N primes
+-- possibleGroups = []
+-- for each prime p in primes:
+--    for each group possibleGroups:
+--        if formsGroup(group, p) then addToGroup(group,p)
+--        if length(group) == 5 then return group
+--    addNewGroup([p], possibleGroups)
+--
+-- problem60 ::
+problem60 =  find ((== 5) . length) $ foldl step Seq.empty primeSnippet
+  where
+    primeSnippet = take 500 Primes.primes
+
+    -- go groups (p:pxs) = let
+    --   nextGroups = step groups p
+    --   in if
+
+
+    step groups prime = let
+      updatedGroups = (\grp -> if concatProperty prime grp then (prime:grp) else grp) <$> groups
+      in updatedGroups Seq.|> [prime]
+
+    -- Short-circuit and bail at the first failed match
+    concatProperty _ [] = True
+    concatProperty p (a:rest)
+      | concattedPrimes p a = concatProperty p rest
+      | otherwise = False
+
+    concattedPrimes l r = isPrime (concatNumbers l r) && isPrime (concatNumbers r l)
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67

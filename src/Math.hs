@@ -57,3 +57,8 @@ intLog10 :: Integer -> Int
 intLog10 n = I# (integerLogBase# 10 n)
 -- The I# boxes the returned unboxed integer
 -- This requires the MagicHash extension to work properly, otherwise # is interpreted as a variable
+
+-- concatenate two numbers to create a third. Beware of overflow for bounded types
+concatNumbers :: Integral a => a -> a -> a
+concatNumbers l r = (l * (10 ^ (intLog10 (fromIntegral r) + 1))) + r
+
