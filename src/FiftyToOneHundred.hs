@@ -7,7 +7,8 @@ import qualified Primes
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
-import Data.Foldable (foldl', find)
+import Control.Monad.State.Strict (State, evalState, gets, modify)
+import Data.Foldable (foldl', find, foldlM)
 import Data.List (sort, sortOn, group, find, intersect)
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.Bits
@@ -365,26 +366,31 @@ problem59 = do
 --    addNewGroup([p], possibleGroups)
 --
 -- problem60 ::
-problem60 =  find ((== 5) . length) $ foldl step Seq.empty primeSnippet
+problem60 = fmap sum . filter ((== 5) . length) . flip evalState M.empty $ foldlM concatProperty [] $ takeWhile (< 20000) Primes.primesLessThanTenMM
   where
-    primeSnippet = take 500 Primes.primes
+    concatProperty [] p = pure [[p]]
+    concatProperty (g:groups) p = do
+      merged <- meomizedMerge p g
+      case merged of
+        Just g' -> ([g, g']<>) <$> concatProperty groups p
+        Nothing -> (g:) <$> concatProperty groups p
 
-    -- go groups (p:pxs) = let
-    --   nextGroups = step groups p
-    --   in if
+    meomizedMerge p g = do
+      isMatch <- all id <$> (mapM (concattedPrimes p) g)
+      pure $ if isMatch then Just (p:g) else Nothing
 
+    concattedPrimes :: Int -> Int -> State (M.Map (Int, Int) Bool) Bool
+    concattedPrimes l r = do
+      cachedValue <- gets (M.lookup (l, r))
+      case cachedValue of
+        Just v -> pure v
+        Nothing ->  do
+          let result = Primes.cryptoPrimeCheck (concatNumbers l r) &&
+                       Primes.cryptoPrimeCheck (concatNumbers r l)
+          modify (M.insert (l, r) result)
+          modify (M.insert (r, l) result)
+          pure result
 
-    step groups prime = let
-      updatedGroups = (\grp -> if concatProperty prime grp then (prime:grp) else grp) <$> groups
-      in updatedGroups Seq.|> [prime]
-
-    -- Short-circuit and bail at the first failed match
-    concatProperty _ [] = True
-    concatProperty p (a:rest)
-      | concattedPrimes p a = concatProperty p rest
-      | otherwise = False
-
-    concattedPrimes l r = isPrime (concatNumbers l r) && isPrime (concatNumbers r l)
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67

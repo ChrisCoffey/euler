@@ -1,4 +1,4 @@
-{-# GHC_OPTIONS MagicHash #-}
+{-# LANGUAGE MagicHash #-}
 module Math where
 
 import qualified Data.Set as Set

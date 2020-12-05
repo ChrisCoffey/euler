@@ -23,10 +23,13 @@ executable euler-exe
 
 library
   hs-source-dirs:      src
-  exposed-modules:     EarlyProblems, FiftyToOneHundred
+  exposed-modules:     EarlyProblems, FiftyToOneHundred, Primes, Math, Info.EarlyProblems, Info.FiftyToOneHundred
   build-depends:       base >= 4.7 && < 5
                      , containers >= 0.5.6.2
+                     , array
+                     , mtl
                      , integer-gmp
+                     , cryptonite
   default-language:    Haskell2010
 
 test-suite euler-test
