@@ -62,3 +62,22 @@ intLog10 n = I# (integerLogBase# 10 n)
 concatNumbers :: Integral a => a -> a -> a
 concatNumbers l r = (l * (10 ^ (intLog10 (fromIntegral r) + 1))) + r
 
+
+triangleNumbers :: [Int]
+triangleNumbers = (\x -> (x * (x+1)) `div` 2) <$> [1..]
+
+squareNumbers :: [Int]
+squareNumbers = (\x -> x * x) <$> [1..]
+
+pentagonalNumbers :: [Int]
+pentagonalNumbers = (\x -> (x * (3 * x - 1)) `div` 2) <$> [1..]
+
+hexagonalNumbers :: [Int]
+hexagonalNumbers = (\x -> x * (2 * x - 1) ) <$> [1..]
+
+heptagonalNumbers :: [Int]
+heptagonalNumbers = (\x -> x * (5 * x - 3) `div` 2 ) <$> [1..]
+
+octagonalNumbers :: [Int]
+octagonalNumbers = (\x -> x * (3 * x - 2) ) <$> [1..]
+

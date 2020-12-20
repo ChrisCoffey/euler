@@ -391,6 +391,38 @@ problem60 = fmap sum . filter ((== 5) . length) . flip evalState M.empty $ foldl
           modify (M.insert (r, l) result)
           pure result
 
+-- Compute a six digit cycle using four digit figurate (meaning polygonal)
+-- numbers. Figurate numbers are used to count the number of things that fit
+-- inside a shape with side length of n
+--
+-- To do this efficiently, I'm going to pre-process all of the figurate numbers
+-- from triangle->octagonal to facilitate easy lookup. From there, perform a DFS
+-- through each set of numbers. There is only one cycle among 4 digit numbers, so
+-- the first one found will be the answer.
+--
+-- The pre-processing step will, for each set of figurate numbers of size X, split
+-- each number into a leading and trailing pair. Then, the numbers will be stored in
+-- a Map Int [Int] for fast lookup.
+--
+-- To reconstruct the original numbers from the lookup table, store a list (stack) of the keys
+-- as the search progresses. The result can be found by popping the head from the stack,
+-- multiplying it by 100, then adding the next element. The first element must be preserved to
+-- use as the final element's tens & ones places.
+--
+-- There is probably a DP solution as well, but I haven't thought through how it will work.
+problem61 :: Int
+problem61 = 42
+  where
+    tris =  fourDigits triangleNumbers
+    squrs =  fourDigits squareNumbers
+    pents =  fourDigits pentagonalNumbers
+    hexs =  fourDigits hexagonalNumbers
+    hepts =  fourDigits heptagonalNumbers
+    octs =  fourDigits octagonalNumbers
+
+    fourDigits = takeWhile inRange $ dropWhile (not . inRange)
+    inRange x = x >= 1000 && x < 10000
+
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
