@@ -2,18 +2,21 @@ module FiftyToOneHundred where
 
 import qualified Info.FiftyToOneHundred  as DATA
 import EarlyProblems (maximumPathPyramid)
-import EarlyProblems as Funcs
+import qualified EarlyProblems as Funcs
 import qualified Primes
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import Control.Monad.State.Strict (State, evalState, gets, modify)
 import Data.Foldable (foldl', find, foldlM)
 import Data.List (sort, sortOn, group, find, intersect)
-import Data.Maybe (mapMaybe, fromMaybe)
+import Data.Maybe (mapMaybe, fromMaybe, isJust)
 import Data.Bits
 import Data.Char (ord, chr)
 import Math
+
+import Debug.Trace
 
 -- which prime, below one-million, can be written as the sum of the most consecutive primes?
 --
@@ -70,7 +73,7 @@ problem51 :: M.Map String [Integer]
 problem51 =
   M.filter ((>= 8) . length) primeTable
   where
-    primesLessThanOneMM = takeWhile (<= 1000000) primes
+    primesLessThanOneMM = takeWhile (<= 1000000) Funcs.primes
 
     primeTable = let
       f table (key, prime) = M.insertWith (<>) key [prime] table
@@ -102,7 +105,7 @@ problem52 :: Int
 problem52 =
   fromMaybe 0 $ find sameDigitsRange [1..]
   where
-    sameDigits l r =  ( sort  $ digits l ) == ( sort  $ digits r )
+    sameDigits l r =  ( sort  $ Funcs.digits l ) == ( sort  $ Funcs.digits r )
     sameDigitsRange l = all id $ (\i -> sameDigits l (l * i )) <$> [2..6]
 
 -- How many values of N-choose-R for N <= 100 are greater than 1M?
@@ -115,7 +118,7 @@ problem52 =
 -- bunch of CPU cycles, at the cost of a slightly more complex algorithm
 problem53 :: Int
 problem53 =  length $ filter (> 1000000) [
-  (factorial n) `div` ((factorial r) * factorial (n - r)) |
+  (Funcs.factorial n) `div` ((Funcs.factorial r) * Funcs.factorial (n - r)) |
     n <- [1..100],
     r <- [1..n]
   ]
@@ -280,18 +283,18 @@ problem55 = let
   where
     -- Initialize an array of boolean values
     -- Whenever a value is found to be Lychrel, increment the counter
-    checkPalindromeCycle 50 x = not . palindromeNumber $ lychrelStep x
+    checkPalindromeCycle 50 x = not . Funcs.palindromeNumber $ lychrelStep x
     checkPalindromeCycle iters x = let
       atStep = lychrelStep x
-      in if palindromeNumber atStep then False else checkPalindromeCycle (iters + 1) atStep
+      in if Funcs.palindromeNumber atStep then False else checkPalindromeCycle (iters + 1) atStep
 
-    lychrelStep x = x + reverseNumber 10 x
+    lychrelStep x = x + Funcs.reverseNumber 10 x
 
 -- Maximal digit sum. Given two numbers a,b < 100, what a^b produces a number with the largest sum of its digits?
 --
 -- This is likely a large number raised to a large power
 problem56 :: Integer
-problem56 = head . reverse $ sort [ (sum . iDigits $ a^b) | a <- [90..99], b <- [90..99] ]
+problem56 = head . reverse $ sort [ (sum . Funcs.iDigits $ a^b) | a <- [90..99], b <- [90..99] ]
 
 
 -- The sqrt of 2 expressed as nested fractions happens to have an inductive algorithm for calculating the n+1-th
@@ -318,7 +321,7 @@ problem58 =
       sideLen' = sideLen spiralState + 2
       lowerRight = sideLen' ^ 2
       others = (\x -> lowerRight - (sideLen' -1) * x) <$> [1..3]
-      numPrimes = length . filter (isPrime . fromIntegral) $ lowerRight:others
+      numPrimes = length . filter (Funcs.isPrime . fromIntegral) $ lowerRight:others
       in PrimeSpiral {sideLen= sideLen spiralState + 2,
                       psNumPrimes= psNumPrimes spiralState + numPrimes
                      }
@@ -410,18 +413,66 @@ problem60 = fmap sum . filter ((== 5) . length) . flip evalState M.empty $ foldl
 -- use as the final element's tens & ones places.
 --
 -- There is probably a DP solution as well, but I haven't thought through how it will work.
+--
+-- That actually really overcomplicates things. Instead, preprocess down to only the lists of
+-- figurate numbers that have a suffix appearing as some other figurate prefix.
+--
+-- This is a rather gnarly solution. I ended up tripping myself up because the `matches` list was
+-- empty on the final match, but I was attempting to `concatMap` across that list. This meant the
+-- final member of the cycle was never added. Took me a solid 15 minutes to debug that.
 problem61 :: Int
-problem61 = 42
+problem61 = let
+  seeds = filter (\(_, _, _, i) -> i == 3) potentials
+  rest = filter (differentFamily 3) potentials
+  in sum . fmap (\(_, _, x, _) -> x) . head . filter (not . null) $ dfs [] rest <$> seeds
   where
-    tris =  fourDigits triangleNumbers
-    squrs =  fourDigits squareNumbers
-    pents =  fourDigits pentagonalNumbers
-    hexs =  fourDigits hexagonalNumbers
-    hepts =  fourDigits heptagonalNumbers
-    octs =  fourDigits octagonalNumbers
 
-    fourDigits = takeWhile inRange $ dropWhile (not . inRange)
+
+    -- preprocessing
+    tris = fourDigits triangleNumbers
+    sqrs = fourDigits squareNumbers
+    pents = fourDigits pentagonalNumbers
+    hexs = fourDigits hexagonalNumbers
+    hepts = fourDigits heptagonalNumbers
+    octs = fourDigits octagonalNumbers
+
+    nums (i, xs) = [(pre, suf, x, i) | x <- xs, let (pre, suf) = splitUp x]
+    splits = nums <$> zip [3..] [tris, sqrs, pents, hexs, hepts, octs]
+
+    potentials = [
+      (pre, suf, x, i) |
+      ls <- splits,
+      let rest = concat $ filter (/= ls) splits,
+      (pre, suf, x, i) <- ls,
+      isJust $ find (\(pre', suf', _, _) -> pre == suf' || suf == pre') rest
+      ]
+
+    dfs xs [] (a, b, x, i)
+      | isJust $ find (\(a', b', x', i') -> i' == 3 && a' == b) xs = xs
+      | otherwise = []
+    dfs xs rest (a,b,x,i) = let
+      matches = filter (\(a', b', x', i') -> b == a' && i' /= i) rest
+      remaining = filter (differentFamily i) rest
+      in if null matches && not (null remaining)-- (trace (show (a,b,x,i)<> " " <> show matches <> " " <> show xs <> " " <> show (length remaining)) matches) && not (null remaining)
+         then []
+         else if not (null remaining)
+            then concatMap (dfs ((a, b, x,i):xs) remaining) matches
+            else dfs ((a, b, x,i):xs) remaining (a,b,x,i)
+
+
+    differentFamily i (_, _, _, a) = i /= a
+
+    fourDigits = takeWhile inRange . dropWhile (not . inRange)
     inRange x = x >= 1000 && x < 10000
+
+    splitUp x = (x `div` 100, x `mod` 100)
+
+-- This problem seeks to find the smallest cube such that the permutation of its digits are also cubes.
+-- I settled on taking the first 10k cube because it was convenient. Obviously doesn't generalize well
+problem62 :: Int
+problem62 = minimum . concat . M.elems . M.filter ((== 5). length) . foldl f M.empty $ take 10000 cubes
+  where
+    f acc cube = M.insertWith (<>) (sort $ Funcs.digits cube) [cube] acc
 
 
 problem67 :: Integer

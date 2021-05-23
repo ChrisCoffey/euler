@@ -81,3 +81,5 @@ heptagonalNumbers = (\x -> x * (5 * x - 3) `div` 2 ) <$> [1..]
 octagonalNumbers :: [Int]
 octagonalNumbers = (\x -> x * (3 * x - 2) ) <$> [1..]
 
+cubes :: [Int]
+cubes = [ x*x*x | x <- [1..]]
