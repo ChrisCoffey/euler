@@ -83,3 +83,6 @@ octagonalNumbers = (\x -> x * (3 * x - 2) ) <$> [1..]
 
 cubes :: [Int]
 cubes = [ x*x*x | x <- [1..]]
+
+numDigits :: Integer -> Integer -> Integer
+numDigits l r = (+ 1) . floor $ (logBase 10 $ fromIntegral l) + (logBase 10 $ fromIntegral r)

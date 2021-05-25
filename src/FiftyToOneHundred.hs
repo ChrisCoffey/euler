@@ -474,6 +474,28 @@ problem62 = minimum . concat . M.elems . M.filter ((== 5). length) . foldl f M.e
   where
     f acc cube = M.insertWith (<>) (sort $ Funcs.digits cube) [cube] acc
 
+-- Powerful digit counts. This seems to deal directly with number theory
+--
+-- The problem revolves around finding n-digit numbers that are also an n-th power.
+-- Inside that, there's a question of how many digits a number will have when raised to the nth power.
+-- Rasing to a power is repeated multiplication, and 10^2 results in an extra 0. Therefore, because
+-- all numbers greater than 10 share this property - meaning they're at least as large as 10 - the only
+-- numbers to evaluate are 1-9 being raised to powers until this property no longer holds.
+--
+-- Can find the number of digits resulting from a multiplication by taking the log_10 of each number,
+-- adding them together, flooring the result, then adding 1. The log_10 determins how many places areAmicable
+-- in each number b/c logarithm is just what you'd have to raise 10 to to get the original number. Adding two
+-- logarithms is equivalent to multiplying them. Flooring drops down to the preceding power of 10, and adding 1 adds on
+-- a 0 like you get when transitoning from 9 -> 10.
+--
+-- The problem asks for a specific and unbounded number, so there is some threshold or terminator,
+-- after which there are no more "powerful numbers".
+problem63 :: Int
+problem63 = length [x^y |
+    x <- [1..9],
+    y <- [1..25],
+    numDigits 1 (x^y) == y
+    ]
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
