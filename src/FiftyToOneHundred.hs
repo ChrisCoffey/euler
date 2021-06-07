@@ -16,6 +16,7 @@ import Data.Bits
 import Data.Char (ord, chr)
 import Math
 import Data.Number.Fixed
+import Data.Ratio
 
 import Debug.Trace
 
@@ -516,6 +517,24 @@ problem64 =
 
     repeatedSqrtFractionStep :: Fixed Prec500 -> Fixed Prec500
     repeatedSqrtFractionStep a = 1/(a - fromIntegral (floor a))
+
+problem65 :: Integer
+problem65 = let
+  eConvergents = 2:3:(8%3):(11%4):computeConvergents eSeq (8%3) (11%4)
+  elem100 = eConvergents !! 9
+  digitSum = sum . Funcs.iDigits $ numerator elem100
+  in digitSum
+  where
+    eSeq :: [Integer]
+    eSeq = concat [[1, 2*k, 1] | k <- [2..]]
+
+    computeConvergents :: [Integer] -> Rational -> Rational -> [Rational]
+    computeConvergents (k:restK) c'' c' = let
+      num = (k * numerator c') + numerator c''
+      den = (k * denominator c') + denominator c''
+      c = num%den
+      in c : computeConvergents restK c' c
+
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
