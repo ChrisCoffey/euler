@@ -15,6 +15,7 @@ import Data.Maybe (mapMaybe, fromMaybe, isJust)
 import Data.Bits
 import Data.Char (ord, chr)
 import Math
+import Data.Number.Fixed
 
 import Debug.Trace
 
@@ -496,6 +497,25 @@ problem63 = length [x^y |
     y <- [1..25],
     numDigits 1 (x^y) == y
     ]
+
+-- This is a brute-force solution. I suspect there's a closed-form, but I
+-- haven't noticed a pattern in where odd sequence lengths occur, so unfortunately
+-- I'm stuck with massive precision operations.
+problem64 :: [Int]
+problem64 =
+  [ sequenceLength (fromIntegral x) |
+    x <- [1..10000],
+    not (isPerfectSquare  x)
+  ]
+  where
+    sequenceLength a = let
+      a0 = sqrt a
+      a0Floor = floor a0
+      infFraction = (floor <$> iterate repeatedSqrtFractionStep a0):: [Int]
+      in length $ takeWhile (/= (2 * a0Floor)) infFraction
+
+    repeatedSqrtFractionStep :: Fixed Prec500 -> Fixed Prec500
+    repeatedSqrtFractionStep a = 1/(a - fromIntegral (floor a))
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
