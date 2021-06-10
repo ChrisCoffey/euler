@@ -3,6 +3,7 @@ module Math where
 
 import qualified Data.Set as Set
 import Data.List (sort, group)
+import Data.Ratio
 import GHC.Integer.Logarithms
 import GHC.Exts
 
@@ -91,3 +92,40 @@ isPerfectSquare :: Int -> Bool
 isPerfectSquare x = let
   a = floor . sqrt $ fromIntegral x
   in a * a == x
+
+sqrtContinuedFraction :: Int -> [Integer]
+sqrtContinuedFraction n
+  | isPerfectSquare n = [r]
+  | otherwise = go r 0 1
+  where
+    r :: Integer
+    r = floor . sqrt $ fromIntegral n
+
+    go :: Integer -> Integer -> Integer -> [Integer]
+    go a p q = let
+      p' = a*q - p
+      q' = (fromIntegral n - p'* p') `div` q
+      a' = (r+p') `div` q'
+      in if q' /= 1
+         then a' : go a' p' q'
+         else [a']
+
+convergents :: Integer -> [Rational]
+convergents n
+  | isPerfectSquare (fromIntegral n) = [r % 1]
+  | otherwise = let
+    (a:rest) = cycle . sqrtContinuedFraction $ fromIntegral n
+    c'' = r % 1
+    c' = (r*a + 1)% a
+    in c'':c':go rest c'' c'
+
+  where
+    r :: Integer
+    r = floor . sqrt $ fromIntegral n
+
+    go (a:rest) c'' c' = let
+      num = (a * numerator c') + numerator c''
+      den = (a * denominator c') + denominator c''
+      c = num % den
+      in c : go rest c' c
+

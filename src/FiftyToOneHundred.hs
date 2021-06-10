@@ -9,11 +9,12 @@ import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import Control.Monad.State.Strict (State, evalState, gets, modify)
-import Data.Foldable (foldl', find, foldlM)
+import Data.Foldable (foldl', find, foldlM, maximumBy)
 import Data.List (sort, sortOn, group, find, intersect)
 import Data.Maybe (mapMaybe, fromMaybe, isJust)
 import Data.Bits
 import Data.Char (ord, chr)
+import Data.Ord
 import Math
 import Data.Number.Fixed
 import Data.Ratio
@@ -521,7 +522,7 @@ problem64 =
 problem65 :: Integer
 problem65 = let
   eConvergents = 2:3:(8%3):(11%4):computeConvergents eSeq (8%3) (11%4)
-  elem100 = eConvergents !! 9
+  elem100 = eConvergents !! 99
   digitSum = sum . Funcs.iDigits $ numerator elem100
   in digitSum
   where
@@ -535,6 +536,17 @@ problem65 = let
       c = num%den
       in c : computeConvergents restK c' c
 
+-- this is pell's equation
+problem66 :: Integer
+problem66 =
+  snd . maximumBy (comparing fst) $ minimalSolution <$> filter (not . isPerfectSquare . fromIntegral ) [2..1000]
+  where
+    minimalSolution d = head [(x, d) |
+      cvgnt <- convergents  $ fromIntegral d,
+      let x = numerator cvgnt,
+      let y = denominator cvgnt,
+      (x*x) - (d * (y*y)) == 1
+      ]
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
