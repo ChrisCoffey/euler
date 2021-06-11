@@ -10,7 +10,7 @@ import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import Control.Monad.State.Strict (State, evalState, gets, modify)
 import Data.Foldable (foldl', find, foldlM, maximumBy)
-import Data.List (sort, sortOn, group, find, intersect)
+import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
 import Data.Maybe (mapMaybe, fromMaybe, isJust)
 import Data.Bits
 import Data.Char (ord, chr)
@@ -550,6 +550,33 @@ problem66 =
 
 problem67 :: Integer
 problem67 = maximumPathPyramid DATA.problem67
+
+--problem68 :: [[Int]]
+problem68 = minimum <$> M.elems uniqueSolutions
+  where
+    n = 10
+    x = 5
+    -- generate all rings, in ascending clockwise order
+    rings = [ fullRing |
+      numbers <- choose x [1..n],
+      let diff = [1..n] \\ numbers,
+      orderings <- permutations numbers,
+      let h = head orderings,
+      outerNums <- permutations diff,
+      let innerRing = orderings `zip` tail (orderings<>[h]),
+      let fullRing = map (\((b,c), a) -> (a,b,c))$ innerRing `zip` outerNums,
+      allSameSum fullRing
+      ]
+
+    tripleSum (a,b,c) = a+b+c
+    allSameSum (x:xs) = let
+      leadSum = tripleSum x
+      in all (== leadSum) $ map tripleSum xs
+
+    uniqueSolutions = foldl f M.empty rings
+    f index ring = M.insertWith (<>) (sort ring) [ring] index
+
+
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =
