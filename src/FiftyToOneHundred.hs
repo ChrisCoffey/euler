@@ -9,7 +9,7 @@ import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import Control.Monad.State.Strict (State, evalState, gets, modify)
-import Data.Foldable (foldl', find, foldlM, maximumBy)
+import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
 import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
 import Data.Maybe (mapMaybe, fromMaybe, isJust)
 import Data.Bits
@@ -554,12 +554,10 @@ problem67 = maximumPathPyramid DATA.problem67
 --problem68 :: [[Int]]
 problem68 = minimum <$> M.elems uniqueSolutions
   where
-    n = 10
-    x = 5
     -- generate all rings, in ascending clockwise order
     rings = [ fullRing |
-      numbers <- choose x [1..n],
-      let diff = [1..n] \\ numbers,
+      numbers <- choose 5 [1..9],
+      let diff = [1..10] \\ numbers,
       orderings <- permutations numbers,
       let h = head orderings,
       outerNums <- permutations diff,
@@ -576,7 +574,32 @@ problem68 = minimum <$> M.elems uniqueSolutions
     uniqueSolutions = foldl f M.empty rings
     f index ring = M.insertWith (<>) (sort ring) [ring] index
 
+problem69 = [ (fromIntegral n / (fromIntegral $ totient n), n) | n <- [200000..300000]]
 
+problem69Fast =
+  rho <$> potentials
+  where
+    potentials = takeWhile (<= 1000000) [product p | n <- [2..], let p = take n (Primes.primes :: [Integer])]
+    rho n = (fromIntegral  n / fromIntegral (totient n), n)
+
+-- "Centering" the serach around sqrt(10^7) dramatically reduces the search space. This takes about 10 sec
+problem70 = minimumBy (comparing thrd) [ (tot, x, fromIntegral x / fromIntegral tot) |
+              p <- smallishPrimes,
+              p' <- dropWhile (<= p) smallishPrimes,
+              p' > p,
+              let x = p * p',
+              x <= 10^7,
+              let tot = totient p * totient p',
+              logBase 10 (fromIntegral x) - logBase 10 (fromIntegral tot) <= 0.01,
+              sameDigits x tot
+              ]
+  where
+    cap = (+  500). floor . head $ convergents (10^7)
+    smallishPrimes = takeWhile (<= cap) Primes.primes
+    sameDigits a b = sort (Funcs.iDigits a) == sort (Funcs.iDigits b)
+    thrd (_, _, x) = x
+
+problem71 = 42
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =

@@ -7,6 +7,8 @@ import Data.Ratio
 import GHC.Integer.Logarithms
 import GHC.Exts
 
+import Primes
+
 -- Produce the in-order "choose" selections from a list
 choose ::
   Int
@@ -128,4 +130,32 @@ convergents n
       den = (a * denominator c') + denominator c''
       c = num % den
       in c : go rest c' c
+
+factors :: Integer -> [Integer]
+factors n =
+  foldr (\(a,b) xs -> if a == b then a:xs else a:b:xs ) [1,n] rawFactors
+  where
+      rawFactors = [ (x, n `div` x) |
+        let integerComponentSqrt = numerator . head $ convergents n,
+        x <- [2..integerComponentSqrt],
+        n `mod` x == 0
+        ]
+
+binaryGCD :: Integer -> Integer -> Integer
+binaryGCD a b
+  | a == b = a
+  | a == 0 = b
+  | b == 0 = a
+  | odd a && even b = binaryGCD a (b `div` 2)
+  | odd a && a > b = binaryGCD ((a-b) `div` 2) b
+  | odd a = binaryGCD ((b-a) `div` 2) a
+  | otherwise = if odd b
+                then binaryGCD (a`div`2) b
+                else binaryGCD (a`div`2) (b `div` 2)
+
+-- The number of numbers < n that are relatively prime to n
+totient :: Integer -> Integer
+totient n = floor $ foldl (*) (fromIntegral n) [1 - (1 % fromIntegral  x) | x <- factors n, cryptoPrimeCheck x]
+  -- fromIntegral . length $ [x | x <- [1..(n-1)], gcd x n == 1]
+  -- ^ This is a correct definition, but very slow and inelegant
 
