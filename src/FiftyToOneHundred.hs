@@ -599,7 +599,19 @@ problem70 = minimumBy (comparing thrd) [ (tot, x, fromIntegral x / fromIntegral 
     sameDigits a b = sort (Funcs.iDigits a) == sort (Funcs.iDigits b)
     thrd (_, _, x) = x
 
-problem71 = 42
+problem71 = last $ go 0 2 5
+  where
+    target = 3 % 7
+
+    go best n d
+      | d > 10^6 = []
+      | n % d > target = go best n (d+1)
+      | n % d < target = let
+        frac = n % d
+        in if reducedProperFrac n d && frac > best
+           then frac : go frac (n+1) d
+           else go best (n+1) d
+      | otherwise =  go best (n+1) d
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =

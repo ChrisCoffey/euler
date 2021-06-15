@@ -159,3 +159,16 @@ totient n = floor $ foldl (*) (fromIntegral n) [1 - (1 % fromIntegral  x) | x <-
   -- fromIntegral . length $ [x | x <- [1..(n-1)], gcd x n == 1]
   -- ^ This is a correct definition, but very slow and inelegant
 
+properFractions = [ n % d |
+  d <- [2..],
+  n <- [1..d-1],
+  gcd n d == 1
+  ]
+
+properFractionsLT z = [n % d |
+  d <- [z, z-1..2],
+  n <- [1..d-1],
+  gcd n d == 1
+  ]
+
+reducedProperFrac n d = gcd n d == 1 && n < d
