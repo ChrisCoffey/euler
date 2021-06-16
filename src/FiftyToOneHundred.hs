@@ -615,6 +615,16 @@ problem71 = last $ go 0 2 5
 
 problem72 = sum $ totients (10^6)
 
+problem73 = sum [eligible d | d <- [4..12000]]
+  where
+    eligible :: Int -> Int
+    eligible d =
+      let a = ceiling $ fromIntegral d/3
+          b = floor $ fromIntegral d/2
+          fracs = [n | n <- [a..b], gcd n d == 1]
+      in length fracs
+
+
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =
