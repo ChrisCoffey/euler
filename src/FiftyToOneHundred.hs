@@ -613,6 +613,9 @@ problem71 = last $ go 0 2 5
            else go best (n+1) d
       | otherwise =  go best (n+1) d
 
+problem72 = sum $ totients (10^6)
+
+
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =
   M.fromList . foldl' accumulate [] $ zip range [1..]

@@ -2,8 +2,11 @@
 module Math where
 
 import qualified Data.Set as Set
-import Data.List (sort, group)
+import qualified Data.Map as M
+import Data.List (sort, sortBy, group)
+import Data.Foldable (foldl')
 import Data.Ratio
+import Data.Ord (comparing)
 import GHC.Integer.Logarithms
 import GHC.Exts
 
@@ -159,14 +162,23 @@ totient n = floor $ foldl (*) (fromIntegral n) [1 - (1 % fromIntegral  x) | x <-
   -- fromIntegral . length $ [x | x <- [1..(n-1)], gcd x n == 1]
   -- ^ This is a correct definition, but very slow and inelegant
 
+-- A sieve for calculating totients
+totients :: Integer -> [Integer]
+totients cap = map snd . sortBy (comparing fst) . M.toList $ foldl' step idx [2..cap]
+  where
+    idx = M.fromList [(x, x)| x <- [2..cap]]
+    step index d = let
+      val = index M.! d
+      in if val == d
+         then foldl' (innerStep d) index [d,d*2 .. cap]
+         else index
+
+    innerStep d index e = let
+      val = index M.! e
+      in M.insert e ((val `div` d) * (d-1)) index
+
 properFractions = [ n % d |
   d <- [2..],
-  n <- [1..d-1],
-  gcd n d == 1
-  ]
-
-properFractionsLT z = [n % d |
-  d <- [z, z-1..2],
   n <- [1..d-1],
   gcd n d == 1
   ]
