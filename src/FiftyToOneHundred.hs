@@ -624,7 +624,34 @@ problem73 = sum [eligible d | d <- [4..12000]]
           fracs = [n | n <- [a..b], gcd n d == 1]
       in length fracs
 
+problem74 = let
+  additionalNumbers = exchange0For1 <$> filter (isJust . find (== 1) ) digs
+  in sum $ length . unique . filter ((/= 0) . head) . permutations <$> digs<>additionalNumbers
+  where
+    digs = [ digs |
+              n <- [1..6],
+              digs <- unique . filter ((/= 0) . head) $  sort <$> chooseWithReplacement n [0..9],
+              (== 60) . length $ factorialChain (fromIntegral  $ digitsToNumber (length digs -1) digs)
+              ]
+    digitsToNumber n (x:[]) = x
+    digitsToNumber n (x:xs) = (x * (10^n)) + digitsToNumber (n-1) xs
 
+    exchange0For1 [] = []
+    exchange0For1 (1:xs) = 0 : exchange0For1 xs
+    exchange0For1 (a:xs) = a : exchange0For1 xs
+
+ -- snd $ foldl' go (M.empty, 0) [1..10^6]
+ -- where
+ --   go (memo, acc) n =
+ --     let
+ --       digs = digits n
+ --       found = M.member digs memo
+ --     in if found
+ --        then maybe (memo, acc) (\v -> if v == 60 then (memo, acc+1) else (memo, acc)) $ M.lookup digs memo
+ --        else let
+ --               len = length $ factorialChain (fromIntegral n)
+ --               memo' = M.insert digs len memo
+ --             in if len == 60 then (memo', acc+1) else (memo', acc)
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =

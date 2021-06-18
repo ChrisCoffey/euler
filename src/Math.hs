@@ -24,6 +24,20 @@ choose n ls@(a:rest)
   | n >= length ls = [ls]
   | otherwise = (fmap ((:) a) $ choose (n-1) rest) <> choose n rest
 
+chooseWithReplacement :: Int -> [a] -> [[a]]
+chooseWithReplacement _ [] = []
+chooseWithReplacement 0 _ = []
+chooseWithReplacement 1 ls = (: []) <$> ls
+chooseWithReplacement num ls
+  | num >= length ls = [ls]
+  | otherwise = foldl (\xs _ -> concatMap (\ys -> (:ys) <$> ls )xs) (chooseWithReplacement 1 ls) [1..num-1]
+
+cartesianProduct ::
+  [a] ->
+  [a] ->
+  [[a]]
+cartesianProduct as bs = [ [b,a] | a <- as, b <- bs]
+
 -- Replaces the specified indexes with 'newVal'
 -- The list is zero indexed
 replaceAt ::
@@ -184,3 +198,24 @@ properFractions = [ n % d |
   ]
 
 reducedProperFrac n d = gcd n d == 1 && n < d
+
+digits :: Integer -> [Integer]
+digits n = snd $ foldl' (\(n', acc) _ -> step acc n') (n,[]) [1..numDigits]
+  where
+    numDigits = ceiling $ logBase 10 ( fromIntegral n)
+    step ls n' = let
+      digit = n' `mod` 10
+      in (n' `div` 10, digit:ls)
+
+factorialChain :: Int -> [Int]
+factorialChain n = n : go (Set.fromList [n]) n
+  where
+    factorial x = product [1..x]
+    go :: Set.Set Int -> Int -> [Int]
+    go seen n' = let
+      facSum = fromIntegral . sum $ factorial <$> digits (fromIntegral n')
+      seen' = Set.insert facSum seen
+      in if facSum `Set.member` seen
+         then []
+         else facSum : go seen' facSum
+
