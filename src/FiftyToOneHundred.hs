@@ -640,6 +640,30 @@ problem74 = let
     exchange0For1 (1:xs) = 0 : exchange0For1 xs
     exchange0For1 (a:xs) = a : exchange0For1 xs
 
+problem75 =  M.size $ M.filterWithKey (\k v -> length v == 1 && fromIntegral  k <= maxLen) perimeterLengths
+  where
+    maxLen = 1500000
+    sideLengths = basePythagoreanTriplets 1000
+
+    extend trip@(a,b,c) = let
+      perim = perimeter trip
+      cap = maxLen `div` perim
+      extension = [(x*a, x*b, x*c)  | x <- [1..cap]]
+      in extension
+
+    allLengths = concatMap extend sideLengths
+
+    perimeterLengths = foldl' (\acc trip -> M.insertWith mergeIfNew (perimeter trip) [trip] acc ) M.empty allLengths
+    perimeter (a,b,c) = a + b + c
+
+
+    mergeIfNew [(a,b,c)] known@[(a', b', c')]
+      | (a == a' && b == b') || (a == b' && b == a') = known
+      | otherwise = [(a', b', c'), (a,b,c)]
+    mergeIfNew ls@[(a,b,c)] known@((a', b', c'):rest)
+      | (a == a' && b == b') || (a == b' && b == a') = known
+      | otherwise = (a', b', c'):mergeIfNew ls rest
+
  -- snd $ foldl' go (M.empty, 0) [1..10^6]
  -- where
  --   go (memo, acc) n =
