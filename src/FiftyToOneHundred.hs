@@ -664,18 +664,34 @@ problem75 =  M.size $ M.filterWithKey (\k v -> length v == 1 && fromIntegral  k 
       | (a == a' && b == b') || (a == b' && b == a') = known
       | otherwise = (a', b', c'):mergeIfNew ls rest
 
- -- snd $ foldl' go (M.empty, 0) [1..10^6]
- -- where
- --   go (memo, acc) n =
- --     let
- --       digs = digits n
- --       found = M.member digs memo
- --     in if found
- --        then maybe (memo, acc) (\v -> if v == 60 then (memo, acc+1) else (memo, acc)) $ M.lookup digs memo
- --        else let
- --               len = length $ factorialChain (fromIntegral n)
- --               memo' = M.insert digs len memo
- --             in if len == 60 then (memo', acc+1) else (memo', acc)
+
+-- Inspiration for this solution was taken from https://www.programminglogic.com/integer-partition-algorithm/
+--
+-- It works by recursing all the way to the "bottom" on one side, while slowly exploring from the top on the other. The
+-- memoization table builds from the bottom-up as the waysB calculations run. These memoized values can then be reused at each
+-- higher-level step, reducing the amount of work required the further along the algorithm runs.
+--
+-- I struggled to find the proper divide and conqueor aproach. I mistakenly was traversing [n-1, n-2..1] and memoizing those values, but
+-- that's simply the powers of two. The parition function is something much more complicated
+problem76 = evalState (waysToMake 100 99) M.empty
+  where
+    waysToMake :: Int -> Int -> State (M.Map (Int, Int) Int) Int
+    waysToMake n m
+      | m == 0 = pure 0
+      | n == 0 = pure 1
+      | n < 0 = pure 0
+      | otherwise = do
+          knownM <- gets (M.lookup (n,m)) -- This is indexed on n & m because each value of m may be unique to a given n, but can be reused
+          case knownM of
+            Just ways ->
+              pure ways
+            Nothing -> do
+              waysA <- waysToMake n (m - 1) -- Take the same n, but the next step down for m. This is
+              waysB <- waysToMake (n - m) m
+              let ways = waysA + waysB
+              modify (M.insert (n, m) ways)
+              pure ways
+
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =

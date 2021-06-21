@@ -219,6 +219,8 @@ factorialChain n = n : go (Set.fromList [n]) n
          then []
          else facSum : go seen' facSum
 
+-- Produce all of the primative pythagorean triplets (triplets for which the values do not share a common factor),
+-- as well as some of their multiples
 basePythagoreanTriplets :: Int ->  [(Int, Int, Int)]
 basePythagoreanTriplets cap = [ (a,b,c) |
   m <- [2..cap],
