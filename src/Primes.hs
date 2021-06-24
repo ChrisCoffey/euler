@@ -51,6 +51,9 @@ cryptoPrimeCheck = isProbablyPrime . fromIntegral
 
 -- The majority of numbers are divisible by a small prime
 trialDivisionPrimality :: Int -> Bool
+trialDivisionPrimality 1 = False
+trialDivisionPrimality 2 = True
+trialDivisionPrimality 3 = True
 trialDivisionPrimality n
   | n `mod` 2 == 0 || n `mod` 3 == 0 = False
   | otherwise =  let

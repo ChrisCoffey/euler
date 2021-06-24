@@ -8,7 +8,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
-import Control.Monad.State.Strict (State, evalState, gets, modify)
+import Control.Monad.State.Strict (State, evalState, runState, gets, modify)
 import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
 import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
 import Data.Maybe (mapMaybe, fromMaybe, isJust)
@@ -673,25 +673,25 @@ problem75 =  M.size $ M.filterWithKey (\k v -> length v == 1 && fromIntegral  k 
 --
 -- I struggled to find the proper divide and conqueor aproach. I mistakenly was traversing [n-1, n-2..1] and memoizing those values, but
 -- that's simply the powers of two. The parition function is something much more complicated
-problem76 = evalState (waysToMake 100 99) M.empty
-  where
-    waysToMake :: Int -> Int -> State (M.Map (Int, Int) Int) Int
-    waysToMake n m
-      | m == 0 = pure 0
-      | n == 0 = pure 1
-      | n < 0 = pure 0
-      | otherwise = do
-          knownM <- gets (M.lookup (n,m)) -- This is indexed on n & m because each value of m may be unique to a given n, but can be reused
-          case knownM of
-            Just ways ->
-              pure ways
-            Nothing -> do
-              waysA <- waysToMake n (m - 1) -- Take the same n, but the next step down for m. This is
-              waysB <- waysToMake (n - m) m
-              let ways = waysA + waysB
-              modify (M.insert (n, m) ways)
-              pure ways
+problem76 = last $ partitions 100
 
+problem77 = zip [1..] $ evalState (traverse primePartitions [1..100]) M.empty
+  where
+    sopf = sum . primeFactors
+
+    -- This is the euler transform applied to product(1/1-k^q)
+    -- derived from https://math.stackexchange.com/questions/89240/prime-partition
+    primePartitions :: Integer -> State (M.Map Integer Integer) Integer
+    primePartitions 1 = pure 0
+    primePartitions n = do
+      known <- gets (M.lookup n)
+      case known of
+        Just ways -> pure ways
+        Nothing -> do
+          partialWays <- traverse (\j -> (* (sopf j)) <$> primePartitions (n-j)) [1..n-1]
+          let ways = (sopf n + sum partialWays) `div` n
+          modify (M.insert n ways)
+          pure ways
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =

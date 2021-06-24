@@ -1,6 +1,7 @@
 {-# LANGUAGE MagicHash #-}
 module Math where
 
+import Control.Monad.State.Strict (State, evalState, gets, modify)
 import qualified Data.Set as Set
 import qualified Data.Map as M
 import Data.List (sort, sortBy, group)
@@ -158,6 +159,9 @@ factors n =
         n `mod` x == 0
         ]
 
+primeFactors :: Integer -> [Integer]
+primeFactors = filter (Primes.trialDivisionPrimality . fromIntegral) . factors
+
 binaryGCD :: Integer -> Integer -> Integer
 binaryGCD a b
   | a == b = a
@@ -229,3 +233,23 @@ basePythagoreanTriplets cap = [ (a,b,c) |
   let b = (2 * m * n),
   let c = (m^2 + n^2)
   ]
+
+partitions :: Integer -> [(Integer, Integer)]
+partitions cap = evalState (traverse (\n -> (\ways -> (n, ways)) <$> waysToMake n (n-1)) [1..cap]) M.empty
+  where
+    waysToMake :: Integer -> Integer -> State (M.Map (Integer, Integer) Integer) Integer
+    waysToMake n m
+      | m == 0 = pure 0
+      | n == 0 = pure 1
+      | n < 0 = pure 0
+      | otherwise = do
+          knownM <- gets (M.lookup (n,m)) -- This is indexed on n & m because each value of m may be unique to a given n, but can be reused
+          case knownM of
+            Just ways ->
+              pure ways
+            Nothing -> do
+              waysA <- waysToMake n (m - 1) -- Take the same n, but the next step down for m. This is
+              waysB <- waysToMake (n - m) m
+              let ways = waysA + waysB
+              modify (M.insert (n, m) ways)
+              pure ways
