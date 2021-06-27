@@ -306,7 +306,7 @@ partitionsEuler ls = zip [1..] $ evalState (traverse k ls) initialCaches
 partitionsPentagonal :: [(Integer, Integer)]
 partitionsPentagonal = zip [1..] $ evalState (traverse countPartitions [1..]) M.empty
   where
-    vals = zip generalPentagonalNumbers $ concatMap (\x -> [x, -x]) [1..]
+    vals = zip generalPentagonalNumbers [0..]
 
     sign :: Integer -> Integer
     sign k
@@ -322,7 +322,7 @@ partitionsPentagonal = zip [1..] $ evalState (traverse countPartitions [1..]) M.
     countPartitions :: Integer -> State (M.Map Integer Integer) Integer
     countPartitions n = do
       let pents = takeWhile ((<= n) . fst) vals
-      pN <- sum <$> traverse (\(gK, k) -> (* (sign $ abs k)) <$> getP (n - gK) ) pents
+      pN <- max 0 . sum <$> traverse (\(gK, k) -> (* (sign $ abs k)) <$> getP (n - gK) ) pents
       modify (M.insert n pN)
       pure pN
 
