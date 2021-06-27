@@ -693,6 +693,8 @@ problem77 = zip [1..] $ evalState (traverse primePartitions [1..100]) M.empty
           modify (M.insert n ways)
           pure ways
 
+problem78 =  partitionsEuler [(5 * n)+4| n <- [1..2000]]
+
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =
   M.fromList . foldl' accumulate [] $ zip range [1..]

@@ -1,7 +1,7 @@
 {-# LANGUAGE MagicHash #-}
 module Math where
 
-import Control.Monad.State.Strict (State, evalState, gets, modify)
+import Control.Monad.State.Lazy (State, evalState, gets, modify)
 import qualified Data.Set as Set
 import qualified Data.Map as M
 import Data.List (sort, sortBy, group)
@@ -10,6 +10,7 @@ import Data.Ratio
 import Data.Ord (comparing)
 import GHC.Integer.Logarithms
 import GHC.Exts
+import Debug.Trace
 
 import Primes
 
@@ -93,6 +94,11 @@ squareNumbers = (\x -> x * x) <$> [1..]
 pentagonalNumbers :: [Int]
 pentagonalNumbers = (\x -> (x * (3 * x - 1)) `div` 2) <$> [1..]
 
+generalPentagonalNumbers :: [Integer]
+generalPentagonalNumbers = concatMap (\x -> [f x, f (-x)]) [1..]
+  where
+    f x = (x * (3 * x - 1)) `div` 2
+
 hexagonalNumbers :: [Int]
 hexagonalNumbers = (\x -> x * (2 * x - 1) ) <$> [1..]
 
@@ -150,6 +156,7 @@ convergents n
       in c : go rest c' c
 
 factors :: Integer -> [Integer]
+factors 1 = [1]
 factors n =
   foldr (\(a,b) xs -> if a == b then a:xs else a:b:xs ) [1,n] rawFactors
   where
@@ -253,3 +260,69 @@ partitions cap = evalState (traverse (\n -> (\ways -> (n, ways)) <$> waysToMake 
               let ways = waysA + waysB
               modify (M.insert (n, m) ways)
               pure ways
+
+data EulerMemo = EM {
+  cCache :: M.Map Integer Integer,
+  kCache :: M.Map Integer Integer
+  }
+
+partitionsEuler :: [Integer] -> [(Integer, Integer)]
+partitionsEuler ls = zip [1..] $ evalState (traverse k ls) initialCaches
+  where
+    initialCaches = EM M.empty M.empty
+
+    c :: Integer -> State EulerMemo Integer
+    c n = do
+      known <- gets (M.lookup n . cCache)
+      case known of
+        Just x -> pure x
+        Nothing -> do
+          let x = sum (factors n)
+          modify (\m -> m {cCache = M.insert n x (cCache m)})
+          pure x
+
+    k :: Integer -> State EulerMemo Integer
+    k 1 = pure 1
+    k n = do
+      known <- gets (M.lookup n . kCache)
+      case known of
+        Just ways -> pure ways
+        Nothing -> do
+          partialWays <- traverse (step n) [1..n-1]
+          facs <- c n
+          let ways = (facs + sum partialWays) `div` n
+          modify (\m -> m {kCache = M.insert n ways (kCache m)})
+          pure ways
+
+    step n j = do
+      a <- k (n-j)
+      b <- c j
+      pure (a * b)
+
+-- This generates partition counts using Euler's pentagonal number theory. The
+-- theory provides a recurrence for calculating partitions, which means p(n+1) isNaN
+-- p(n) + <next term>. That has an exponential increase in performance relative to
+-- my dynamic programming approaches above
+partitionsPentagonal :: [(Integer, Integer)]
+partitionsPentagonal = zip [1..] $ evalState (traverse countPartitions [1..]) M.empty
+  where
+    vals = zip generalPentagonalNumbers $ concatMap (\x -> [x, -x]) [1..]
+
+    sign :: Integer -> Integer
+    sign k
+      | k `mod` 4 > 1 = -1
+      | otherwise = 1
+
+    getP :: Integer -> State (M.Map Integer Integer) Integer
+    getP n
+      | n == 0 = pure 1
+      | n < 0 = pure 0
+      | otherwise = gets (M.! n)
+
+    countPartitions :: Integer -> State (M.Map Integer Integer) Integer
+    countPartitions n = do
+      let pents = takeWhile ((<= n) . fst) vals
+      pN <- sum <$> traverse (\(gK, k) -> (* (sign $ abs k)) <$> getP (n - gK) ) pents
+      modify (M.insert n pN)
+      pure pN
+
