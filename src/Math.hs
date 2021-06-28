@@ -119,6 +119,43 @@ isPerfectSquare x = let
   a = floor . sqrt $ fromIntegral x
   in a * a == x
 
+-- Computes the number of digits to arbitrary precision in a squareroot
+sqrtDigits :: Int -> Int -> ([Integer], [Integer])
+sqrtDigits steps n = splitToParts $ calcDigit steps nDigits 0 0
+  where
+    integerDigits = length nDigits
+    -- Pair up digits, starting from the right hand side
+    nDigits = let
+      digs = digits $ fromIntegral n
+      in if even $ length digs
+         then pairs digs
+         else pairs (0:digs)
+
+    calcDigit 0 [] _ p = p
+    calcDigit _ [] 0 p = p
+    calcDigit n [] c p = calcDigit n [(0, 0)] c p
+    calcDigit digitsRemaining ((a,b):rest) c p = let
+      aB = (a * 10) + b
+      c' = (c * 100) + aB
+      x = maximum [x' | x' <- [0..9], x' *((20 * p) + x') <= c']
+      y = x * ((20 * p) + x)
+      in calcDigit (digitsRemaining - 1) rest (c' - y) ((p * 10) + x)
+
+    splitToParts root = let
+      digs = digits root
+      integerPart = take integerDigits digs
+      decimalPart = drop integerDigits digs
+      in (integerPart, decimalPart)
+
+
+
+pairs :: [a] -> [(a,a)]
+pairs [] = []
+pairs [_] = []
+pairs (a:b:rest) = (a,b): pairs rest
+
+
+-- | Returns  the cyclic portion of a continued fraction
 sqrtContinuedFraction :: Int -> [Integer]
 sqrtContinuedFraction n
   | isPerfectSquare n = [r]
@@ -136,6 +173,7 @@ sqrtContinuedFraction n
          then a' : go a' p' q'
          else [a']
 
+-- | Find progressively better and better rational approximations of a number's sqrt
 convergents :: Integer -> [Rational]
 convergents n
   | isPerfectSquare (fromIntegral n) = [r % 1]
@@ -210,10 +248,16 @@ properFractions = [ n % d |
 
 reducedProperFrac n d = gcd n d == 1 && n < d
 
+-- The dropWhile is a dirty hack because I'm not in the mood to debug this function, nor
+-- do I need to right now
 digits :: Integer -> [Integer]
-digits n = snd $ foldl' (\(n', acc) _ -> step acc n') (n,[]) [1..numDigits]
+digits n = dropWhile (== 0) . snd $ foldl' (\(n', acc) _ -> step acc n') (n,[]) [1..numDigits]
   where
-    numDigits = ceiling $ logBase 10 ( fromIntegral n)
+    numDigits = let
+      a = ceiling $ logBase 10 ( fromIntegral n)
+      in if n `mod` 10 == 0
+         then a +1
+         else a
     step ls n' = let
       digit = n' `mod` 10
       in (n' `div` 10, digit:ls)
@@ -241,6 +285,7 @@ basePythagoreanTriplets cap = [ (a,b,c) |
   let c = (m^2 + n^2)
   ]
 
+-- | Dynamic programming approach to finding the number of partitions for each value less than cap
 partitions :: Integer -> [(Integer, Integer)]
 partitions cap = evalState (traverse (\n -> (\ways -> (n, ways)) <$> waysToMake n (n-1)) [1..cap]) M.empty
   where

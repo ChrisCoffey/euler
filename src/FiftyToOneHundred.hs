@@ -695,6 +695,18 @@ problem77 = zip [1..] $ evalState (traverse primePartitions [1..100]) M.empty
 
 problem78 =  partitionsEuler [(5 * n)+4| n <- [1..2000]]
 
+-- Solved this with pencil + paper
+problem79 = 42
+
+problem80 =
+    sum $ concat [
+          take 100 (integers<>decimals) |
+          n <- [1..100],
+          not $ isPerfectSquare n,
+          let (integers, decimals) = sqrtDigits 110 n
+        ]
+
+
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =
   M.fromList . foldl' accumulate [] $ zip range [1..]
