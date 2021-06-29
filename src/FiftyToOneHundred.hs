@@ -8,6 +8,8 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Control.Monad.State.Strict (State, evalState, runState, gets, modify)
 import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
 import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
@@ -705,6 +707,44 @@ problem80 =
           not $ isPerfectSquare n,
           let (integers, decimals) = sqrtDigits 110 n
         ]
+
+-- A very slow implementation that explores both branches
+problem81 :: IO Int
+problem81 = do
+  rawLines <- T.lines <$> TIO.readFile "data/p081_matrix.txt"
+  let matrix = Seq.fromList $ fmap (Seq.fromList . (map (read . T.unpack) :: [T.Text] -> [Int])) $ T.split (== ',') <$> rawLines
+      origin = getFromMatrix matrix 0 0
+      pathScores = search matrix (Seq.fromList [(0,0)]) S.empty (M.fromList [((0,0), origin)])
+  pure $ pathScores M.! (boundary, boundary)
+
+  where
+
+    boundary = 79
+    getFromMatrix m x y = (m `Seq.index` y) `Seq.index` x
+    search matrix frontier seen scores =
+      case Seq.viewl frontier of
+        Seq.EmptyL ->
+          scores
+        ( v Seq.:< rest) | S.notMember v seen -> let
+          (frontier', scores') = djikstra matrix rest seen scores v
+          in search matrix frontier' (S.insert v seen) scores'
+        ((x,y) Seq.:< rest) ->
+          search matrix rest seen scores -- when (x,y) have been seen already, skip the point
+
+    djikstra matrix frontier seen scores v@(x,y) = let
+      frontierX = if x < boundary then frontier Seq.|> (x+1, y) else frontier
+      frontier' = if y < boundary then frontierX Seq.|> (x, y+1) else frontierX
+      scores' = updateScore matrix (updateScore matrix scores v (x+1, y)) v (x, y+1)
+      in (frontier', scores')
+
+    updateScore matrix scores from to@(x,y) = let
+      vWeight = scores M.! from
+      toVal = getFromMatrix matrix x y
+      destScore = vWeight + toVal
+      in
+        case M.lookup to scores of
+          Just knownScore | knownScore < destScore -> scores
+          _ -> M.insert to destScore scores
 
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int

@@ -119,7 +119,7 @@ isPerfectSquare x = let
   a = floor . sqrt $ fromIntegral x
   in a * a == x
 
--- Computes the number of digits to arbitrary precision in a squareroot
+-- Computes the number of digits to arbitrary precision in a square root
 sqrtDigits :: Int -> Int -> ([Integer], [Integer])
 sqrtDigits steps n = splitToParts $ calcDigit steps nDigits 0 0
   where
