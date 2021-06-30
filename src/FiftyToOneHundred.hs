@@ -747,6 +747,86 @@ problem81 = do
           _ -> M.insert to destScore scores
 
 
+problem82 = do
+  rawLines <- T.lines <$> TIO.readFile "data/p082_matrix.txt"
+  let matrix = Seq.fromList $ fmap (Seq.fromList . (map (read . T.unpack) :: [T.Text] -> [Int])) $ T.split (== ',') <$> rawLines
+      origins = [((0, y), getFromMatrix matrix 0 y) | y <- [0..boundary]]
+      boundaries = [(boundary, y) | y <- [0..boundary]]
+      pathScores = (\o@(origin, _) -> (origin, search matrix (Seq.fromList [origin]) (M.fromList [o]))) <$> origins
+      start (a,b,c) = a
+  pure $ minimumBy (comparing start) [(scores M.! end, origin, end) | (origin, scores) <- pathScores, end <- boundaries]
+
+  where
+
+    boundary = 79
+    getFromMatrix m x y = (m `Seq.index` y) `Seq.index` x
+    search matrix frontier scores =
+      case Seq.viewl frontier of
+        Seq.EmptyL ->
+          scores
+        ( v Seq.:< rest) -> let
+          (frontier', scores') = djikstra matrix rest scores v
+          in search matrix frontier' scores'
+
+    djikstra matrix frontier scores v@(x,y) = let
+      neighbors = filter (\pt -> inBounds pt) [(x, y-1), (x+1, y), (x, y+1)]
+      scores' = foldl (updateScore matrix v) scores neighbors
+      neighbors' = filter (\pt ->(fromMaybe (10^10) $ M.lookup pt scores ) > (scores' M.! pt)) neighbors
+      frontier' = frontier Seq.>< Seq.fromList neighbors'
+      in (frontier', scores')
+
+    updateScore matrix from scores to@(x,y) = let
+      vWeight = scores M.! from
+      toVal = getFromMatrix matrix x y
+      destScore = vWeight + toVal
+      in
+        case M.lookup to scores of
+          Just knownScore | knownScore < destScore -> scores
+          _ -> M.insert to destScore scores
+
+    inBounds (x,y) = x <= boundary && y <= boundary && y >=0
+
+problem83 :: IO Int
+problem83 = do
+  rawLines <- T.lines <$> TIO.readFile "data/p081_matrix.txt"
+  let matrix = Seq.fromList $ fmap (Seq.fromList . (map (read . T.unpack) :: [T.Text] -> [Int])) $ T.split (== ',') <$> rawLines
+      origin = getFromMatrix matrix 0 0
+      pathScores = search matrix (Seq.fromList [(0,0)]) (M.fromList [((0,0), origin)])
+  pure $ pathScores M.! (boundary, boundary)
+
+  where
+
+    boundary = 79
+    getFromMatrix m x y = (m `Seq.index` y) `Seq.index` x
+    search matrix frontier scores =
+      case Seq.viewl frontier of
+        Seq.EmptyL ->
+          scores
+        ( v Seq.:< rest) -> let
+          (frontier', scores') = djikstra matrix rest scores v
+          in search matrix frontier' scores'
+
+    djikstra matrix frontier scores v@(x,y) = let
+      neighbors = filter (\pt -> inBounds pt) [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
+      scores' = foldl (updateScore matrix v) scores neighbors
+      neighbors' = filter (\pt ->(fromMaybe (10^10) $ M.lookup pt scores ) > (scores' M.! pt)) neighbors
+      frontier' = frontier Seq.>< Seq.fromList neighbors'
+      in (frontier', scores')
+
+    updateScore matrix from scores to@(x,y) = let
+      vWeight = scores M.! from
+      toVal = getFromMatrix matrix x y
+      destScore = vWeight + toVal
+      in
+        case M.lookup (trace (show (from, to, vWeight, toVal, destScore)) to) scores of
+          Just knownScore | knownScore < destScore -> scores
+          _ -> M.insert to destScore scores
+
+    inBounds (x,y) = x <= boundary && x >=0 && y <= boundary && y >=0
+
+    distFromOrigin (a,b) = sqrt (fromIntegral a^2 + fromIntegral b^2)
+
+
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
 funcOfRanges f range =
   M.fromList . foldl' accumulate [] $ zip range [1..]
