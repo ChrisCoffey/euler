@@ -846,7 +846,7 @@ problem84 = do
   where
     boardSize = 40
     jail = 10
-    dieFaces = 6
+    dieFaces = 4
     numRolls = 2
 
     simulate :: IO (M.Map Int Int)
@@ -890,12 +890,12 @@ problem84 = do
 
       case landing of
         2 -> handleDraw drawCC landing
-        7 -> handleDraw drawCH landing
+        7 -> handleDraw (drawCH landing) landing
         17 -> handleDraw drawCC landing
-        22 -> handleDraw drawCH landing
+        22 -> handleDraw (drawCH landing) landing
         30 -> trackMove jail
         33 -> handleDraw drawCC landing
-        36 -> handleDraw drawCH landing
+        36 -> handleDraw (drawCH landing) landing
         _ -> trackMove landing
       where
         handleDraw deck landing = do
@@ -917,10 +917,9 @@ problem84 = do
           modify $ \s -> s {ccCards = cards}
           pure dest
 
-        drawCH :: StateT MonopolyState IO (Maybe Int)
-        drawCH = do
+        drawCH :: Int -> StateT MonopolyState IO (Maybe Int)
+        drawCH landing = do
           (card, cards) <- gets (draw . chCards)
-          currentLoc <- gets location
           let dest = case card of
                       1 -> Just 0
                       2 -> Just jail
@@ -928,10 +927,10 @@ problem84 = do
                       4 -> Just 24
                       5 -> Just 39
                       6 -> Just 5
-                      7 -> maybe (Just 5) Just $ find (> currentLoc) [5, 15, 25, 35] -- Go to the next railroad
-                      8 -> maybe (Just 5) Just $ find (> currentLoc) [5, 15, 25, 35]
-                      9 -> maybe (Just 12) Just $ find (> currentLoc) [12, 28]
-                      10 -> Just $ (currentLoc - 3)
+                      7 -> maybe (Just 5) Just $ find (> landing) [5, 15, 25, 35] -- Go to the next railroad
+                      8 -> maybe (Just 5) Just $ find (> landing) [5, 15, 25, 35]
+                      9 -> maybe (Just 12) Just $ find (> landing) [12, 28]
+                      10 -> Just $ (landing - 3)
                       _ -> Nothing
           modify $ \s -> s {chCards = cards}
           pure dest
