@@ -10,7 +10,8 @@ import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import Control.Monad.State.Strict (State, evalState, runState, gets, modify)
+import Control.Monad.Trans (liftIO)
+import Control.Monad.State.Strict (State, StateT, execStateT, evalState, runState, gets, modify)
 import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
 import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
 import Data.Maybe (mapMaybe, fromMaybe, isJust)
@@ -18,6 +19,7 @@ import Data.Bits
 import Data.Char (ord, chr)
 import Data.Ord
 import Math
+import Probability
 import Data.Number.Fixed
 import Data.Ratio
 
@@ -769,7 +771,7 @@ problem82 = do
           in search matrix frontier' scores'
 
     djikstra matrix frontier scores v@(x,y) = let
-      neighbors = filter (\pt -> inBounds pt) [(x, y-1), (x+1, y), (x, y+1)]
+      neighbors = filter inBounds [(x, y-1), (x+1, y), (x, y+1)]
       scores' = foldl (updateScore matrix v) scores neighbors
       neighbors' = filter (\pt ->(fromMaybe (10^10) $ M.lookup pt scores ) > (scores' M.! pt)) neighbors
       frontier' = frontier Seq.>< Seq.fromList neighbors'
@@ -824,7 +826,124 @@ problem83 = do
 
     inBounds (x,y) = x <= boundary && x >=0 && y <= boundary && y >=0
 
-    distFromOrigin (a,b) = sqrt (fromIntegral a^2 + fromIntegral b^2)
+data MonopolyState =
+  MonopolyState
+  { ccCards :: Seq.Seq Int
+  , chCards :: Seq.Seq Int
+  , location :: Int
+  , visits :: M.Map Int Int
+  , previousTwoRolls :: [[Int]]
+  } deriving Show
+
+problem84 = do
+  distributions <- traverse (const simulate) [1..1000]
+  let pmf = foldl (\acc m ->
+              foldl (\inner (k, v) ->
+                  M.insertWith (+) k v inner) acc $ M.toList m)
+              M.empty
+              distributions
+  pure pmf
+  where
+    boardSize = 40
+    jail = 10
+    dieFaces = 6
+    numRolls = 2
+
+    simulate :: IO (M.Map Int Int)
+    simulate = do
+      ccCards <- shuffle [1..16]
+      cHCards <- shuffle [1..16]
+      let state = MonopolyState
+                    { ccCards = Seq.fromList ccCards
+                    , chCards = Seq.fromList cHCards
+                    , location = 0
+                    , visits = M.empty
+                    , previousTwoRolls = []
+                    }
+      fmap visits $ execStateT (mapM_ (const gameStep) [1..1000]) state
+
+    gameStep :: StateT MonopolyState IO ()
+    gameStep = do
+      roll <- liftIO (rollDice dieFaces 2)
+      let rollSum = sum roll
+      rolls <- gets previousTwoRolls
+      case rolls of
+        [] -> do
+          advance rollSum
+          modify $ \s -> s { previousTwoRolls = [roll] }
+        [r] -> do
+          advance rollSum
+          modify $ \s -> s { previousTwoRolls = [r, roll] }
+        [rr, r] | doubles rolls && doubles r && doubles rr ->
+          -- three doubles sends player to jail
+          modify $ \s -> s { location = jail,
+                             visits = M.insertWith  (+) jail 1 (visits s),
+                             previousTwoRolls = [r, roll]
+                           }
+        [rr, r] -> do
+          advance rollSum
+          modify $ \s -> s { previousTwoRolls = [r, roll] }
+
+    advance :: Int -> StateT MonopolyState IO ()
+    advance roll = do
+      landing <- (`mod` 40) . (+ roll) <$> gets location
+
+      case landing of
+        2 -> handleDraw drawCC landing
+        7 -> handleDraw drawCH landing
+        17 -> handleDraw drawCC landing
+        22 -> handleDraw drawCH landing
+        30 -> trackMove jail
+        33 -> handleDraw drawCC landing
+        36 -> handleDraw drawCH landing
+        _ -> trackMove landing
+      where
+        handleDraw deck landing = do
+          res <- deck
+          case res of
+            Just dest -> trackMove dest
+            Nothing -> trackMove landing
+
+        trackMove :: Int -> StateT MonopolyState IO ()
+        trackMove loc = modify $ \s -> s { location = loc, visits = M.insertWith  (+) loc 1 (visits s) }
+
+        drawCC :: StateT MonopolyState IO (Maybe Int)
+        drawCC = do
+          (card, cards) <- gets (draw . ccCards)
+          let dest = case card of
+                      1 -> Just 0
+                      2 -> Just jail
+                      _ -> Nothing
+          modify $ \s -> s {ccCards = cards}
+          pure dest
+
+        drawCH :: StateT MonopolyState IO (Maybe Int)
+        drawCH = do
+          (card, cards) <- gets (draw . chCards)
+          currentLoc <- gets location
+          let dest = case card of
+                      1 -> Just 0
+                      2 -> Just jail
+                      3 -> Just 11
+                      4 -> Just 24
+                      5 -> Just 39
+                      6 -> Just 5
+                      7 -> maybe (Just 5) Just $ find (> currentLoc) [5, 15, 25, 35] -- Go to the next railroad
+                      8 -> maybe (Just 5) Just $ find (> currentLoc) [5, 15, 25, 35]
+                      9 -> maybe (Just 12) Just $ find (> currentLoc) [12, 28]
+                      10 -> Just $ (currentLoc - 3)
+                      _ -> Nothing
+          modify $ \s -> s {chCards = cards}
+          pure dest
+
+        draw cards = let
+          (card Seq.:< rest) = Seq.viewl cards
+          in (card, rest Seq.|> card)
+
+    doubles [a,b] = a == b
+
+
+
 
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int

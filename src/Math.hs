@@ -370,4 +370,3 @@ partitionsPentagonal = zip [1..] $ evalState (traverse countPartitions [1..]) M.
       pN <- max 0 . sum <$> traverse (\(gK, k) -> (* (sign $ abs k)) <$> getP (n - gK) ) pents
       modify (M.insert n pN)
       pure pN
-
