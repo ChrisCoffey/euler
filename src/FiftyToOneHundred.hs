@@ -941,7 +941,13 @@ problem84 = do
 
     doubles [a,b] = a == b
 
-
+problem85 = [ (rows * cols, rects, rows, cols) |
+  rows <- [1..1000],
+  cols <- [1..rows],
+  let rowRects = sum [1..cols],
+  let rects = (* rowRects) $ sum [1..rows],
+  abs(2000000 - rects) < 500
+  ]
 
 
 
