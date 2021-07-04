@@ -285,6 +285,10 @@ basePythagoreanTriplets cap = [ (a,b,c) |
   let c = (m^2 + n^2)
   ]
 
+
+extendPythagTrip :: Int -> (Int, Int, Int) -> [(Int, Int, Int)]
+extendPythagTrip cap trip@(a,b,c) = [(x*a, x*b, x*c)  | x <- [1..cap]]
+
 -- | Dynamic programming approach to finding the number of partitions for each value less than cap
 partitions :: Integer -> [(Integer, Integer)]
 partitions cap = evalState (traverse (\n -> (\ways -> (n, ways)) <$> waysToMake n (n-1)) [1..cap]) M.empty
@@ -370,3 +374,6 @@ partitionsPentagonal = zip [1..] $ evalState (traverse countPartitions [1..]) M.
       pN <- max 0 . sum <$> traverse (\(gK, k) -> (* (sign $ abs k)) <$> getP (n - gK) ) pents
       modify (M.insert n pN)
       pure pN
+
+differences :: Num a => [a] -> [a]
+differences xs = (\(l,r) -> r - l) <$> zip xs (tail xs)

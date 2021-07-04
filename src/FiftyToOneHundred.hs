@@ -14,7 +14,7 @@ import Control.Monad.Trans (liftIO)
 import Control.Monad.State.Strict (State, StateT, execStateT, evalState, runState, gets, modify)
 import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
 import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
-import Data.Maybe (mapMaybe, fromMaybe, isJust)
+import Data.Maybe (mapMaybe, fromMaybe, isJust, catMaybes)
 import Data.Bits
 import Data.Char (ord, chr)
 import Data.Ord
@@ -948,6 +948,53 @@ problem85 = [ (rows * cols, rects, rows, cols) |
   let rects = (* rowRects) $ sum [1..rows],
   abs(2000000 - rects) < 500
   ]
+
+-- I had a correct by extremely slow solution using three nested loops. I had to do some searching to uncover
+-- an efficient approach that only uses two loops by combining dimensions y & z. Combining them together makes
+-- it possible to compute the number of valid pythagorean triplets in closed-form instead of enumerating them.
+problem86 = rects 0 0
+  where
+
+    -- Computes the marginal number of rectangles found at each dimension
+    rects :: Int -> Int -> Int
+    rects acc m
+      | acc >= 1000000 = m-1
+      | otherwise = let
+        currentRects = acc + foldl' (\i xy -> i + calcRects m xy) 0 [3..2*m]
+        in rects currentRects (m+1)
+
+    calcRects :: Int -> Int -> Int
+    calcRects x yz = let
+      c = sqrt $ fromIntegral (x^2 + yz^2)
+      in if fromIntegral (floor c) == c
+          then if yz < x then yz `div` 2 else 1 + (x - ((yz+1) `div` 2))
+          else 0
+
+-- I can optimize this
+problem86Triplets = IM.filter (> 1000000) $ foldl accum IM.empty [(cuboids m trip, m) | m <- [1..2000], trip <- triplets, cuboids m trip > 0]
+  where
+    safeHead [] = 0
+    safeHead (x:xs) = x
+
+    accum acc (n, m) = let
+      prev = safeHead $ catMaybes [ IM.lookup (m-idx) acc | idx <- [1..4]]
+      new = not $ IM.member m acc
+      in if new
+         then IM.insertWith (+) m (n + prev) acc
+         else IM.insertWith (+) m n acc
+
+
+    -- A whole bunch of pythagTriplets
+    triplets = unique . map ordered $ concatMap (extendPythagTrip 100) $ basePythagoreanTriplets 50
+    ordered (a,b,c)
+      | a > b = (b,a,c)
+      | otherwise = (a,b,c)
+
+    cuboids m (a,b,c)
+      | a == m && b < m = b `div` 2
+      | a == m && b <= m * 2 = 1 + (a - ((b + 1) `div` 2))
+      | b == m = a `div` 2
+      | otherwise = 0
 
 
 
