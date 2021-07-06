@@ -996,6 +996,26 @@ problem86Triplets = IM.filter (> 1000000) $ foldl accum IM.empty [(cuboids m tri
       | b == m = a `div` 2
       | otherwise = 0
 
+problem87 = length $ unique [res |
+  let start = floor $ nthRoot 4 50000000,
+  a <- takeWhile (<= start) Primes.primes,
+  let a4 = a^4,
+  let rem = 50000000 - a4,
+  let remRoot = floor $ nthRoot 3 rem,
+  b <- takeWhile (<= remRoot) Primes.primes,
+  let b3 = b^3,
+  let sqRem = rem - b3,
+  let sqRemRoot = floor $ nthRoot 2 sqRem,
+  c <- takeWhile (<= sqRemRoot) Primes.primes,
+  let c2 = c^2,
+  let res = a4 + b3 + c2,
+  res < 50000000
+  ]
+
+problem87' = length . filter valid $ chooseWithReplacement 3 primes
+  where
+    primes = takeWhile (<= (floor $ sqrt 50000000)) Primes.primes
+    valid [a,b,c] = a^2 + b^3 + c^4 < 50000000
 
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int

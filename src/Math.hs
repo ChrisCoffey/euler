@@ -377,3 +377,12 @@ partitionsPentagonal = zip [1..] $ evalState (traverse countPartitions [1..]) M.
 
 differences :: Num a => [a] -> [a]
 differences xs = (\(l,r) -> r - l) <$> zip xs (tail xs)
+
+-- | Newton's nth root formula provides successively better estimates of the root.
+-- I've capped it at 100 itterations
+nthRoot :: Int -> Integer -> Double
+nthRoot n num = last . take 20 $ iterate (\x -> (cb * x) +(cc / (x ** ca))) 5
+  where
+    ca = fromIntegral n -1
+    cb = ca / fromIntegral n
+    cc = fromIntegral num / fromIntegral n
