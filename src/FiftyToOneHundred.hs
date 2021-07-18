@@ -1012,10 +1012,14 @@ problem87 = length $ unique [res |
   res < 50000000
   ]
 
-problem87' = length . filter valid $ chooseWithReplacement 3 primes
+
+problem88 = [ sum . head . dropWhile (not . cond) $ prodSum k | k <- [2..50] ]
   where
-    primes = takeWhile (<= (floor $ sqrt 50000000)) Primes.primes
-    valid [a,b,c] = a^2 + b^3 + c^4 < 50000000
+    cond xs = sum xs == product xs
+
+prodSum :: Integer -> [[Integer]]
+prodSum 0 = [[]]
+prodSum k = [x:xs | x <- [1..k*2], xs <- prodSum (k - 1) ]
 
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int

@@ -194,9 +194,12 @@ convergents n
       in c : go rest c' c
 
 factors :: Integer -> [Integer]
-factors 1 = [1]
-factors n =
-  foldr (\(a,b) xs -> if a == b then a:xs else a:b:xs ) [1,n] rawFactors
+factors = allFactors True True
+
+allFactors :: Bool -> Bool -> Integer -> [Integer]
+allFactors _ _ 1 =  [1]
+allFactors onlyUnique includeN n =
+  foldr (\(a,b) xs -> if (a == b && onlyUnique) then a:xs else a:b:xs ) (if includeN then [1,n] else []) rawFactors
   where
       rawFactors = [ (x, n `div` x) |
         let integerComponentSqrt = numerator . head $ convergents n,
@@ -206,6 +209,25 @@ factors n =
 
 primeFactors :: Integer -> [Integer]
 primeFactors = filter (Primes.trialDivisionPrimality . fromIntegral) . factors
+
+-- All factorizations excluding (1,x)
+factorTree :: Integer -> [[Integer]]
+factorTree 1 = []
+factorTree x
+  | Primes.trialDivisionPrimality (fromIntegral x) = []
+  | otherwise = unique . map sort . concatMap expandPair $ factorPairs facs
+  where
+    -- Produces a list of [small_1, big_1, small_2, big_2, ...]
+    -- This list is always of an even length
+    facs = allFactors False False x
+
+    factorPairs [] = []
+    factorPairs (s:b:rest) = (s,b) : factorPairs rest
+
+    -- the pair (s,b) multiply together to equal x. This means the factor tree for (s,b) is
+    -- [[s,b], (s:)<$>factorTree b, (b:)<$>factorTree s]
+    expandPair :: (Integer, Integer) -> [[Integer]]
+    expandPair (s,b) = [s,b] : ( (s:) <$> factorTree b) <> ((b:) <$> factorTree s)
 
 binaryGCD :: Integer -> Integer -> Integer
 binaryGCD a b
