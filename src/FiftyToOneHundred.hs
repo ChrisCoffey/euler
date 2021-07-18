@@ -1013,13 +1013,19 @@ problem87 = length $ unique [res |
   ]
 
 
-problem88 = [ sum . head . dropWhile (not . cond) $ prodSum k | k <- [2..50] ]
+problem88 = let
+  mins = (minimum . (kIndex M.!)) <$> [2..12000]
+  in sum (unique mins)
   where
-    cond xs = sum xs == product xs
+    kIndex = foldl' storeTree M.empty [2..20000]
 
-prodSum :: Integer -> [[Integer]]
-prodSum 0 = [[]]
-prodSum k = [x:xs | x <- [1..k*2], xs <- prodSum (k - 1) ]
+    storeTree acc x = let
+      facs = factorTree x
+      vals = (\xs -> (x - (fromIntegral $ sum xs) + (fromIntegral $ length xs), x)) <$> facs
+      in foldl storeVal acc vals
+
+    storeVal acc (k,v) = M.insertWith (<>) k [v] acc
+
 
 
 funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
