@@ -25,6 +25,14 @@ import Data.Ratio
 
 import Debug.Trace
 
+funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
+funcOfRanges f range =
+  M.fromList . foldl' accumulate [] $ zip range [1..]
+  where
+    accumulate [] a = [a]
+    accumulate ((x, i):xs) (a, j) = (f a x, j) : (x, i) : xs
+
+
 -- which prime, below one-million, can be written as the sum of the most consecutive primes?
 --
 -- A "range of prime sums" is defined as the sum of primes [p1..pn]
@@ -1027,11 +1035,69 @@ problem88 = let
     storeVal acc (k,v) = M.insertWith (<>) k [v] acc
 
 
-
-funcOfRanges :: Ord a => (a -> a -> a) -> [a] -> M.Map a Int
-funcOfRanges f range =
-  M.fromList . foldl' accumulate [] $ zip range [1..]
+ -- Roman numeral optimization
+problem89 = do
+  numerals <- lines <$> readFile "data/p089_roman_numerals.txt"
+  let transformed = generateRomanNumeral . readNumeral <$> numerals
+      delta = sum $ zipWith (\a b -> length a - length b) numerals transformed
+      x = readNumeral "MMCCCLXXXXIX"
+      y = generateRomanNumeral x
+  -- print $ zip numerals transformed
+  print $ x
+  print $ y
+  print $ readNumeral y
+  print delta
   where
-    accumulate [] a = [a]
-    accumulate ((x, i):xs) (a, j) = (f a x, j) : (x, i) : xs
+    -- In the test cases, nothing exceeds 10k
+    generateRomanNumeral n = let
+      thousands = n `div` 1000
+      hundreds = (n `mod` 1000) `div` 100
+      tens = (n `mod` 100) `div` 10
+      ones = (n `mod` 10)
+      in thousandsToNumeral thousands ++
+         hundredsToNumeral hundreds ++
+         tensToNumeral tens ++
+         onesToNumeral ones
+
+    onesToNumeral 0 = ""
+    onesToNumeral 1 = "I"
+    onesToNumeral 2 = "II"
+    onesToNumeral 3 = "III"
+    onesToNumeral 4 = "IV"
+    onesToNumeral 5 = "V"
+    onesToNumeral 6 = "VI"
+    onesToNumeral 7 = "VII"
+    onesToNumeral 8 = "VIII"
+    onesToNumeral 9 = "IX"
+
+    tensToNumeral n = let
+      f c = case c of
+        'I' -> 'X'
+        'V' -> 'L'
+        'X' -> 'C'
+      in fmap f $ onesToNumeral n
+
+    hundredsToNumeral n = let
+      f c = case c of
+        'I' -> 'C'
+        'V' -> 'D'
+        'X' -> 'M'
+      in fmap f $ onesToNumeral n
+
+    thousandsToNumeral n = replicate n 'M'
+
+    readNumeral [] = 0
+    readNumeral ('C':'D':rest) = 400 + readNumeral rest
+    readNumeral ('C':'M':rest) = 900 + readNumeral rest
+    readNumeral ('X':'L':rest) = 40 + readNumeral rest
+    readNumeral ('X':'C':rest) = 90 + readNumeral rest
+    readNumeral ('I':'V':rest) = 4 + readNumeral rest
+    readNumeral ('I':'X':rest) = 9 + readNumeral rest
+    readNumeral ('I':rest) = 1 + readNumeral rest
+    readNumeral ('V':rest) = 5 + readNumeral rest
+    readNumeral ('X':rest) = 10 + readNumeral rest
+    readNumeral ('L':rest) = 50 + readNumeral rest
+    readNumeral ('C':rest) = 100 + readNumeral rest
+    readNumeral ('D':rest) = 500 + readNumeral rest
+    readNumeral ('M':rest) = 1000 + readNumeral rest
 
