@@ -1101,3 +1101,24 @@ problem89 = do
     readNumeral ('D':rest) = 500 + readNumeral rest
     readNumeral ('M':rest) = 1000 + readNumeral rest
 
+-- Starting with a brute force enumeration of all permutations, because there are only ~45k
+problem90 = unique [(a,b) |
+    [a, b] <- choose 2 possibleCubes ,
+    validPair (a,b)
+  ]
+  where
+    possibleCubes = S.fromList <$> choose 6 [0..9]
+    validPair (a,b) = all (squarePresent a b) squares
+
+    squares = [ (0,1), (0,4), (0,9), (1,6), (2,5), (3,6), (4,9), (6,4), (8,1) ]
+
+    -- This handles the odd rotation options
+    squarePresent a b (x,y) = let
+      alt = case (x,y) of
+              (0,9) -> squarePresent a b (0,6)
+              (1,6) -> squarePresent a b (1,9)
+              (3,6) -> squarePresent a b (3,9)
+              (4,9) -> squarePresent a b (4,6)
+              (6,4) -> squarePresent a b (9,4) -- This is symmetric with 49
+              _ -> False
+      in alt || (S.member x a && S.member y b) || (S.member y a && S.member x b)
