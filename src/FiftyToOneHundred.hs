@@ -1139,15 +1139,26 @@ problem91 = triples
       a = (sqrt . fromIntegral $ (x1^2) + (y1^2)) ^2
       b = (sqrt . fromIntegral $ (x2 - x1)^2 + (y2-y1)^2)^2
       c = (sqrt . fromIntegral $ (x2^2) + (y2^2))^2
-      in (closeEnough (a + b) c ||
+      in (closeEnough (a + b) c || -- Check the three possible configurations of points
           closeEnough (a+c) b ||
           closeEnough (b+c) a
          )
          && not (onALine p q)
 
-    onALine p q = slope p q == slope (0,0) p
+    onALine p q = slope p q == slope (0,0) p -- Avoid colinear points
 
-    closeEnough x y = abs (x - y) < 0.0001
+    closeEnough x y = abs (x - y) < 0.0001 -- deal with FP
 
     slope (x1, y1) (x2, y2) = fromIntegral (y2-y1) / fromIntegral (x2 - x1)
+
+problem92 = answer $ foldl f (S.empty, S.empty, []) [1..(10^7 - 1)]
+  where
+    f (one, eightNine, path) n
+      | n == 1 || n `S.member` one = (S.union one (S.fromList path), eightNine, [])
+      | n == 89 || n `S.member` eightNine = (one, S.union eightNine (S.fromList path), [])
+      | otherwise = f (one, eightNine, n:path) (digitSquare n)
+
+    digitSquare = sum . map (^2) . digits
+
+    answer (one, eightNine, _) = (S.size one + 1, S.size eightNine + 1)
 
