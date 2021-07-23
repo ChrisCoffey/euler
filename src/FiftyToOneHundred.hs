@@ -1122,3 +1122,32 @@ problem90 = unique [(a,b) |
               (6,4) -> squarePresent a b (9,4) -- This is symmetric with 49
               _ -> False
       in alt || (S.member x a && S.member y b) || (S.member y a && S.member x b)
+
+problem91 = triples
+  where
+    points = [(x,y) | x <- [0..50], y <- [0..50]]
+    triples = [
+        (p, q)|
+        [p,q] <- choose 2 points,
+        p /= (0,0),
+        q /= (0,0),
+        validPoints p q
+      ]
+
+    validPoints :: (Int, Int) -> (Int, Int) -> Bool
+    validPoints p@(x1, y1) q@(x2, y2) = let
+      a = (sqrt . fromIntegral $ (x1^2) + (y1^2)) ^2
+      b = (sqrt . fromIntegral $ (x2 - x1)^2 + (y2-y1)^2)^2
+      c = (sqrt . fromIntegral $ (x2^2) + (y2^2))^2
+      in (closeEnough (a + b) c ||
+          closeEnough (a+c) b ||
+          closeEnough (b+c) a
+         )
+         && not (onALine p q)
+
+    onALine p q = slope p q == slope (0,0) p
+
+    closeEnough x y = abs (x - y) < 0.0001
+
+    slope (x1, y1) (x2, y2) = fromIntegral (y2-y1) / fromIntegral (x2 - x1)
+
