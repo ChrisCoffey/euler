@@ -10,8 +10,9 @@ import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import Control.Monad (guard)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.State.Strict (State, StateT, execStateT, evalState, runState, gets, modify)
+import Control.Monad.State.Strict (State, StateT, execStateT, evalState, runState, gets, modify, put, get)
 import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
 import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
 import Data.Maybe (mapMaybe, fromMaybe, isJust, catMaybes)
@@ -1161,4 +1162,89 @@ problem92 = answer $ foldl f (S.empty, S.empty, []) [1..(10^7 - 1)]
     digitSquare = sum . map (^2) . digits
 
     answer (one, eightNine, _) = (S.size one + 1, S.size eightNine + 1)
+
+-- Represents a tree of expressions
+data ArithExpr
+  = Mult ArithExpr ArithExpr
+  | Div ArithExpr ArithExpr
+  | Plus ArithExpr ArithExpr
+  | Sub ArithExpr ArithExpr
+  | Lit Int
+  deriving (Eq, Show)
+type ArithVariables = M.Map Int Int
+
+evalArithExpr :: ArithVariables -> ArithExpr -> Maybe Int
+evalArithExpr variables (Lit n) = M.lookup n variables
+evalArithExpr vars (Mult l r) = do
+  a <- evalArithExpr vars l
+  b <- evalArithExpr vars r
+  pure $ a * b
+evalArithExpr vars (Div l r) = do
+  a <- evalArithExpr vars l
+  b <- evalArithExpr vars r
+  guard $ b /= 0
+  let c = (fromIntegral a / fromIntegral b) :: Rational
+  guard $ abs (fromIntegral (a `div` b) - c) <= 0.001 -- This may be unnecessary, but it's unclear whether this works on integer division
+  pure $ a `div` b
+evalArithExpr vars (Plus l r) = do
+  a <- evalArithExpr vars l
+  b <- evalArithExpr vars r
+  pure $ a + b
+evalArithExpr vars (Sub l r) = do
+  a <- evalArithExpr vars l
+  b <- evalArithExpr vars r
+  pure $ a - b
+
+problem93 = maximumBy (comparing snd) [
+    (setOfDigits, rl) |
+    setOfDigits <- choose 4 [0..9],
+    let vars = M.fromList . zip [1..] <$> permutations setOfDigits,
+    let rl = runLength [evalArithExpr var tree | tree <- fourDigitTrees, var <- vars]
+  ]
+
+  where
+      binaryOps a b = concat $ [ [op (Lit a) (Lit b)] | op <- [Mult, Plus]] <> [ [op (Lit a) (Lit b), op (Lit b) (Lit a)] | op <- [Div, Sub]]
+      symmetricOps = [Mult, Plus]
+      otherOps = [Div, Sub]
+
+      fourDigitTrees :: [ArithExpr]
+      fourDigitTrees = let
+        rhsTrips = threeDigitTrees 2
+        lhsTrips = threeDigitTrees 1
+        rhsSym = concatMap (\op -> (op (Lit 1)) <$> rhsTrips) symmetricOps
+        lhsSym = concatMap (\op ->  ((`op` (Lit 4)) <$> lhsTrips) <> ((op (Lit 1) ) <$> rhsTrips)) otherOps
+        lhsBins = binaryOps 1 2
+        rhsBins = binaryOps 3 4
+        symBins = [
+            op lh rh |
+            op <- symmetricOps,
+            lh <- lhsBins,
+            rh <- rhsBins
+          ]
+        otherBins = concat [
+          [op lh rh, op rh lh] |
+            op <- otherOps,
+            lh <- lhsBins,
+            rh <- rhsBins
+          ]
+        in rhsSym <> lhsSym <> symBins <> otherBins
+
+      threeDigitTrees :: Int -> [ArithExpr]
+      threeDigitTrees leftMost = syms <> others
+        where
+          x = leftMost
+          y = leftMost + 1
+          z = leftMost + 2
+
+          syms = concatMap (\op -> (op (Lit x) ) <$> binaryOps y z) symmetricOps
+          others = concatMap (\op ->  ((`op` (Lit x)) <$> binaryOps y z) <> ((op (Lit x) ) <$> binaryOps y z)) otherOps
+
+      runLength xs = let
+        run = filter (> 0) . unique $ catMaybes xs
+        paired = zip run (tail run)
+        res = dropWhile (\(a,b) -> b == a+1) paired
+        in case res of
+          [] -> snd $ last paired
+          ((a,b):_) -> a
+
 
