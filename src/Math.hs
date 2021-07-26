@@ -408,3 +408,9 @@ nthRoot n num = last . take 20 $ iterate (\x -> (cb * x) +(cc / (x ** ca))) 5
     ca = fromIntegral n -1
     cb = ca / fromIntegral n
     cc = fromIntegral num / fromIntegral n
+
+probablyIntegral :: RealFrac a => a -> Bool
+probablyIntegral x = let
+    up = ceiling x :: Int
+    down = floor x :: Int
+  in abs (fromIntegral up - x) <= 0.0001 || abs (fromIntegral down-x) <= 0.0001

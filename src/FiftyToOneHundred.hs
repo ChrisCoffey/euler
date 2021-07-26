@@ -1247,4 +1247,25 @@ problem93 = maximumBy (comparing snd) [
           [] -> snd $ last paired
           ((a,b):_) -> a
 
+oneBillion :: Int
+oneBillion = 10^9
+
+-- I first computed the 100 or so initial ones, but due to FP math, this started to get pretty dicey
+-- This recurrence finds right triangles with an angle approaching pi/3, or 60-degrees. That angle holds constant
+-- accross all of the almost-equilateral triangles as they scale up, so there's no reason to traverse _all_ of
+-- the possible hypotenuse lengths.
+--
+-- I tracked this down using the OEIS database once I'd computed the first 6 brute-force. The recurrence is _much_ better!
+problem94 = floor . sum $ snd <$> validTriangles 2 [(5, 16), (1, 0), (1, 0)]
+  where
+    validTriangles n xs@((c, _):(b, _):(a, _):_) = let
+      next = (3*c)  + (3*b) - a
+      base = ((next - ((-1)^n)) / 2) :: Double
+      other = sqrt $ (next^2 - ((base)^2)) :: Double
+      area = base * other
+      perim = 2*base + 2*next
+      in if (trace (show (next, base, other, area, perim)) perim) > fromIntegral oneBillion
+         then xs
+         else validTriangles (n+1) ((next, perim):xs)
+
 
