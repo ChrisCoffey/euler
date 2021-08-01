@@ -196,6 +196,9 @@ convergents n
 factors :: Integer -> [Integer]
 factors = allFactors True True
 
+properFactors :: Integer -> [Integer]
+properFactors = (1:) . allFactors True False
+
 allFactors :: Bool -> Bool -> Integer -> [Integer]
 allFactors _ _ 1 =  [1]
 allFactors onlyUnique includeN n =

@@ -14,7 +14,7 @@ import Control.Monad (guard)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State.Strict (State, StateT, execStateT, evalState, runState, gets, modify, put, get)
 import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
-import Data.List (sort, (\\), sortOn, group, find, intersect, permutations)
+import Data.List (sort, (\\), sortOn, group, find, intersect, permutations, partition)
 import Data.Maybe (mapMaybe, fromMaybe, isJust, catMaybes)
 import Data.Bits
 import Data.Char (ord, chr)
@@ -1268,4 +1268,35 @@ problem94 = floor . sum $ snd <$> validTriangles 2 [(5, 16), (1, 0), (1, 0)]
          then xs
          else validTriangles (n+1) ((next, perim):xs)
 
+-- Precompute a table of number -> factor sum, then use Floyd's cycle algorithm to find and map the cycle. This isn't the most efficient,
+-- but does the trick.
+problem95 = IM.filter (> 1) $ foldl' go IM.empty [2..500000]
+  where
+    factorSums = IM.fromList . zip [2..] $ sum . map fromIntegral . properFactors . fromIntegral <$> ([2..1000000] :: [Int])
 
+    go knownCycles n =
+      case (IM.lookup n factorSums, IM.lookup n knownCycles) of
+        (Just m, Nothing) -> findCycle knownCycles n m
+        _ -> knownCycles
+    findCycle knownCycles n m
+      -- Dead end
+      | n == 1 || n > 10^6 = nullCycle knownCycles n
+      | m == 1 || m > 10^6 = nullCycle knownCycles m
+      -- A new cycle
+      | n == m = let
+        cyc = cycle (factorSums IM.! n) n
+        len = length cyc
+        newCycleMembers = IM.fromList $ (\x -> (x,len)) <$> cyc
+        in IM.union knownCycles newCycleMembers
+      | otherwise = let
+        n' = fromMaybe 1 $ IM.lookup n factorSums
+        m' = fromMaybe 1 $ (`IM.lookup` factorSums) =<< IM.lookup m factorSums
+        in findCycle knownCycles n' m'
+
+    nullCycle knownCycles n = IM.insert n 0 knownCycles
+
+    cycle n m
+      | n == m = [n]
+      | otherwise = let
+        n' = factorSums IM.! n
+        in n : cycle n' m
