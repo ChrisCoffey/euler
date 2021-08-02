@@ -14,7 +14,7 @@ import Control.Monad (guard)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State.Strict (State, StateT, execStateT, evalState, runState, gets, modify, put, get)
 import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
-import Data.List (sort, (\\), sortOn, group, find, intersect, permutations, partition)
+import Data.List (sort, (\\), sortOn, group, find, intersect, permutations, partition, isPrefixOf)
 import Data.Maybe (mapMaybe, fromMaybe, isJust, catMaybes)
 import Data.Bits
 import Data.Char (ord, chr)
@@ -1300,3 +1300,24 @@ problem95 = IM.filter (> 1) $ foldl' go IM.empty [2..500000]
       | otherwise = let
         n' = factorSums IM.! n
         in n : cycle n' m
+
+-- Indexing for a puzzle is (9 * (row `mod` 9) + col)
+newtype SudokuPuzzle = SudokuPuzzle (IM.IntMap Int)
+  deriving (Eq, Show, Ord)
+
+problem96 = do
+  rawLines <- lines <$> readFile "data/p095_sudoku.txt"
+  let puzzles = parsePuzzles rawLines
+  pure puzzles
+  where
+    parsePuzzles [] = []
+    parsePuzzles (str:rest)
+      | isPrefixOf "Grid" str = let
+        puzzleLines = take 9 rest
+        remainingLines = drop 9 rest
+        puzzle = parsePuzzleNumbers puzzleLines
+        in puzzle:parsePuzzles remainingLines
+      | otherwise = error $ "Bug in the parser. Tried to parse " <> str <> " as a puzzle"
+
+    parsePuzzleNumbers xs = SudokuPuzzle . IM.fromList . zip [0..] . map ((\x -> x - 48) . ord) $ concat xs
+
