@@ -1303,12 +1303,22 @@ problem95 = IM.filter (> 1) $ foldl' go IM.empty [2..500000]
 
 -- Indexing for a puzzle is (9 * (row `mod` 9) + col)
 newtype SudokuPuzzle = SudokuPuzzle (IM.IntMap Int)
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Ord)
+
+instance Show SudokuPuzzle where
+  show (SudokuPuzzle p) =
+    concat [ c |
+      i <- [0..80],
+      let x = p IM.! i,
+      let c = if i `mod` 9 == 8 then (show x ++ "\n") else (show x ++ " ")
+    ]
 
 problem96 = do
   rawLines <- lines <$> readFile "data/p095_sudoku.txt"
   let puzzles = parsePuzzles rawLines
-  pure puzzles
+      scores = score . fromMaybe (error "invalid") . solve <$> puzzles
+  print . catMaybes $ solve <$> puzzles
+  pure $ scores
   where
     parsePuzzles [] = []
     parsePuzzles (str:rest)
@@ -1321,3 +1331,67 @@ problem96 = do
 
     parsePuzzleNumbers xs = SudokuPuzzle . IM.fromList . zip [0..] . map ((\x -> x - 48) . ord) $ concat xs
 
+    score (SudokuPuzzle p) = (100 * p IM.! 0) + (10 * p IM.! 1) + (p IM.! 2)
+    solve puzzle@(SudokuPuzzle p) = let
+      rowConst = IM.fromList $ concatMap (constrainRow puzzle) [0..8]
+      colConst = IM.fromList $ concatMap (constrainColumn puzzle) [0..8]
+      boxConst = IM.fromList $ concatMap (constrainBox puzzle) [0..8]
+      step = IM.unionWith intersect (IM.unionWith intersect rowConst colConst) boxConst
+      solvedCells = head <$> IM.filter ((== 1) . length) step
+      invalidFromDupes = any (dupeCheck solvedCells) [0..8]
+      -- ^ This is a lot of duplicated work I _could_ move into the constraint resolution logic
+      p' = IM.union solvedCells p
+      complete = (== 0) . IM.size $ IM.filter (== 0) p
+      deadEnd = (> 0) . IM.size $ IM.filter (null) step
+      in if deadEnd || invalidFromDupes
+         then Nothing
+         else
+          if complete
+          then Just puzzle
+          -- no solved cells, branch
+          else
+            if IM.size solvedCells > 0 -- some cells were solved
+            then solve (SudokuPuzzle p')
+            else branchAndSolve puzzle . head $ IM.toAscList step
+
+    branchAndSolve (SudokuPuzzle puzzle) (cell, possibleValues) =
+      find (const True) $ catMaybes [ solve (SudokuPuzzle puzzle') |
+        val <- possibleValues,
+        let puzzle' = IM.insert cell val puzzle
+      ]
+
+    possibleValues = [1..9]
+
+    rowCells rowNumber = let
+      startIndex = rowNumber * 9
+      in [startIndex..startIndex+8]
+
+    columnCells columnNumber =
+      (+columnNumber) <$> [0,9..72]
+
+    boxCells boxNumber = let
+      startIndex = ((boxNumber `div` 3) * 27) + (boxNumber `mod` 3 * 3)
+      in [i | x <- [startIndex, startIndex+1, startIndex+2], i <- [x, x+9, x+18]]
+
+    propagateConstraints (SudokuPuzzle p) cells = let
+      values = possibleValues \\ ((p IM.!) <$> cells)
+      unfixedRowValues = [(cell,values) | cell <- cells, let val = p IM.! cell, val == 0]
+      in unfixedRowValues
+
+    -- Find all values in a given row that need to be filled in
+    constrainRow p = propagateConstraints p . rowCells
+
+    constrainColumn p = propagateConstraints p . columnCells
+
+    constrainBox p = propagateConstraints p . boxCells
+
+    containsDuplicates solvedCells indexingOp n = let
+      cells = indexingOp n
+      solvedInFocus = catMaybes $ (`IM.lookup` solvedCells) <$> cells
+      duplicates = filter ((> 1) . length). group $ sort solvedInFocus
+      in not $ null duplicates
+
+    dupeCheck cells n =
+      containsDuplicates cells rowCells n ||
+      containsDuplicates cells columnCells n ||
+      containsDuplicates cells boxCells n
