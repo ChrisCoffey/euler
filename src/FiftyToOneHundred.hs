@@ -1396,6 +1396,12 @@ problem96 = do
       containsDuplicates cells columnCells n ||
       containsDuplicates cells boxCells n
 
+
+-- This is a boring solution...
+-- TODO implement the interesting solution that breaks down the exponent into its binary components,
+-- then multiplies 2^(set bit) toegether; modding by 10^10 at each step of course.
 problem97 = let
   x = 2^7830457
   in (`mod` (10^10)) $ (28433 * x) + 1
+
+problem97' =  (`mod` (10^10)) . (* 28433) $ foldl' (\n _ -> (n * 2) `mod` (10^10)) 1 [1..7830457]
