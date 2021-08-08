@@ -4,6 +4,7 @@ module Math where
 import Control.Monad.State.Lazy (State, evalState, gets, modify)
 import qualified Data.Set as Set
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import Data.List (sort, sortBy, group)
 import Data.Foldable (foldl')
 import Data.Ratio
@@ -417,3 +418,13 @@ probablyIntegral x = let
     up = ceiling x :: Int
     down = floor x :: Int
   in abs (fromIntegral up - x) <= 0.0001 || abs (fromIntegral down-x) <= 0.0001
+
+perfectSquares :: [Integer]
+perfectSquares = (^2) <$> [1..]
+
+groupByLength :: [Integer] -> IM.IntMap [Integer]
+groupByLength = foldl' (\m n -> IM.insertWith (<>) (floor . logBase 10 $ fromIntegral n) [n] m) IM.empty
+
+
+approxNumDigits :: Int -> Int -> Float
+approxNumDigits base exp = (logBase 10 $ fromIntegral base) * fromIntegral exp

@@ -1404,4 +1404,64 @@ problem97 = let
   x = 2^7830457
   in (`mod` (10^10)) $ (28433 * x) + 1
 
-problem97' =  (`mod` (10^10)) . (* 28433) $ foldl' (\n _ -> (n * 2) `mod` (10^10)) 1 [1..7830457]
+problem97' =  (+1) . (`mod` (10^10)) . (* 28433) $ foldl' (\n _ -> (n * 2) `mod` (10^10)) 1 [1..7830457]
+
+problem98 = do
+  rawWords <- T.split (== ',') . T.pack <$> readFile "data/p098_words.txt"
+  let anagrams = M.filter ((> 1) . length) $ anagramIndex rawWords
+      pairs = M.elems anagrams
+      maxLength = maximum $ T.length <$> M.keys anagrams
+      perfectSquareAnagrams = M.filter ((> 1) . length). anagramSquares $ squareNums maxLength
+      lengthSorted = M.foldlWithKey (\m k xs -> M.insertWith (<>) (length k) [xs] m) M.empty perfectSquareAnagrams
+      possibleSolution =
+        [ res |
+          an <- pairs,
+          p <- choose 2 an,
+          let len = T.length $ head p,
+          let mSquares = M.lookup len lengthSorted,
+          isJust mSquares,
+          let (Just pSquares) = mSquares,
+          sq <- pSquares,
+          res <- validateAnagram p sq
+        ]
+  pure possibleSolution
+  where
+    anagramIndex = foldl (\m w -> M.insertWith (<>) (sortedWord w) [w] m) M.empty
+    sortedWord = T.pack . sort . T.unpack
+
+    squareNums maxLength = takeWhile (< (10^(maxLength+1))) perfectSquares
+    anagramSquares = foldl' (\m n -> M.insertWith (<>) (sort $ digits n) [n] m) M.empty
+
+    eightDigitSets = S.fromList $ choose 8 [0..9]
+
+    validateAnagram [l,r] squares =
+      [ (l,a,r,b) |
+        [a,b] <- choose 2 squares,
+        let idx = internallyConsistent M.empty (T.unpack l) (digits a),
+        fromMaybe False (validateAgainstIndex (T.unpack r) (digits b) <$> idx)
+      ]
+
+
+    internallyConsistent idx [] _ = Just idx
+    internallyConsistent idx (c:rest) (d:moreDigits) =
+      case M.lookup c idx of
+        Just n | n == d -> internallyConsistent idx rest moreDigits
+        Just n | n /= d -> Nothing
+        Nothing | elem d (M.elems idx) -> Nothing
+        Nothing -> internallyConsistent (M.insert c d idx) rest moreDigits
+
+    validateAgainstIndex :: String -> [Integer] -> M.Map Char Integer -> Bool
+    validateAgainstIndex [] _ _ = True
+    validateAgainstIndex (c:rest) (d:moreDigits) idx =
+      case M.lookup c idx of
+        Just n | n == d -> validateAgainstIndex rest moreDigits idx
+        _ -> False
+
+
+problem99 = do
+  pairs <- map (map (read . T.unpack) . T.split (== ',') . T.pack) . lines <$> readFile "data/p99_base_exp.txt"
+  pure . sortOn snd . fmap (\(i, p) -> (i, toDigitScore p))$ zip [1..] pairs
+  where
+    toDigitScore [b,exp] = approxNumDigits b exp
+
+problem100 = 42
