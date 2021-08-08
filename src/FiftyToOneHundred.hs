@@ -1395,3 +1395,7 @@ problem96 = do
       containsDuplicates cells rowCells n ||
       containsDuplicates cells columnCells n ||
       containsDuplicates cells boxCells n
+
+problem97 = let
+  x = 2^7830457
+  in (`mod` (10^10)) $ (28433 * x) + 1
