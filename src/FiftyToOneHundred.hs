@@ -1464,4 +1464,18 @@ problem99 = do
   where
     toDigitScore [b,exp] = approxNumDigits b exp
 
-problem100 = 42
+-- This algorithm is correct, but slow
+problem100 =
+  head $ dropWhile (\(x, _) -> x < (10^12)) [ (x, n)|
+    i <- [1..] :: [Integer],
+    let x = generatingFunc i,
+    let num = ((x^2) - x) `div` 2,
+    let n = ceiling $ sqrt (fromIntegral num),
+    let m = n-1,
+    n*m == num
+  ]
+  where
+    -- Learn exactly how this recurrence works
+    generatingFunc 0 = 1
+    generatingFunc 1 = 4
+    generatingFunc x = 6 * (generatingFunc $ x-1) - (generatingFunc $ x-2) - 2
