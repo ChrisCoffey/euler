@@ -25,6 +25,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     EarlyProblems,
                        FiftyToOneHundred,
+                       OneHundredToOneFifty,
                        Primes,
                        Probability,
                        Math,
