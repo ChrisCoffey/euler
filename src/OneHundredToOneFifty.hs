@@ -26,22 +26,22 @@ import Data.Ratio
 
 import Debug.Trace
 
-problem101 :: [Fixed Prec10]
-problem101 = [ lagrangeInterpolation (take n basePoints) (fromIntegral n) | n <- [1..10]]
+problem101 :: Int
+problem101 = let
+  steps = [lagrangeInterpolation (take n basePoints) (fromIntegral n) | n <- [1..10]] :: [Fixed Prec10]
+  in sum $ fmap floor steps
   where
-basePoints = zip [0..] $ baseSequence 100.0
+  basePoints = zip [0..] $ baseSequence 100.0
 
-lagrangeInterpolation points target =
-  sum [ term |
-        (xi, yi) <- points,
-        let term = foldl' (lagrangeStep target xi) yi points
-      ]
+  lagrangeInterpolation points target =
+    sum [ term |
+          (xi, yi) <- points,
+          let term = foldl' (lagrangeStep target xi) yi points
+        ]
 
-lagrangeStep target xi term (xj, _)
-  | xi /= xj = term * ((target - xj) / (xi - xj))
-  | otherwise = term
+  lagrangeStep target xi term (xj, _)
+    | xi /= xj = term * ((target - xj) / (xi - xj))
+    | otherwise = term
 
-baseSequence len = generatingFunc <$> [1..len]
-generatingFunc n = sum [ coef * (n^pow) | pow <- [0..10], let coef = if even pow then 1 else -1 ]
-
-testBaseSeq len = (^3) <$> [1..len]
+  baseSequence len = generatingFunc <$> [1..len]
+  generatingFunc n = sum [ coef * (n^pow) | pow <- [0..10], let coef = if even pow then 1 else -1 ]
