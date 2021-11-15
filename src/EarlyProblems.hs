@@ -7,7 +7,7 @@ import Data.Char (digitToInt, ord, isAlpha)
 import Data.Function (on)
 import Data.List (intersect, partition, find, maximumBy, permutations, sort,
     (\\), tails, nub, sortBy, nubBy, insert, isPrefixOf, sortOn, groupBy,
-    subsequences)
+    subsequences, length)
 import Data.Monoid ((<>))
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Foldable (foldl')
@@ -410,7 +410,9 @@ problem16 = sum . map digitToInt . show $ 2 ^ 1000
 
 problem17 :: Int
 problem17 = sum . map (length . stringify) $ [1..1000]
-    where stringify n
+    where
+      stringify :: Int -> String
+      stringify n
             | n == 0                = ""
             | n == 10               = "ten"
             | n == 11               = "eleven"
