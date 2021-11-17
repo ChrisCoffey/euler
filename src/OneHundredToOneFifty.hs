@@ -13,7 +13,7 @@ import qualified Data.Text.IO as TIO
 import Control.Monad (guard)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State.Strict (State, StateT, execStateT, evalState, runState, gets, modify, put, get)
-import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy)
+import Data.Foldable (foldl', find, foldlM, maximumBy, minimumBy, toList)
 import Data.List (sort, (\\), sortOn, group, find, intersect, permutations, partition, isPrefixOf)
 import Data.Maybe (mapMaybe, fromMaybe, isJust, catMaybes)
 import Data.Bits
@@ -51,31 +51,34 @@ problem101 = let
 -- set of points provided
 convexHull :: [(Int, Int)] -> [(Int, Int)]
 convexHull points = let
-  upper = convexScan (take 2 orderedPoints) (drop 2 orderedPoints)
-  lower = convexScan (take 2 $ reverse  orderedPoints) (drop 2 $ reverse  orderedPoints)
-  in unique (upper <> lower)
+  upper = convexScan (Seq.take 2 orderedPoints) (Seq.drop 2 orderedPoints)
+  lower = convexScan (Seq.take 2 $ Seq.reverse orderedPoints) (Seq.drop 2 $ Seq.reverse orderedPoints)
+  in unique $ toList (upper <> lower)
   where
-    orderedPoints = sortOn fst points
+    orderedPoints = Seq.fromList $ sortOn fst points
 
-    convexScan fixedHull [] = fixedHull
-    convexScan (b:c:fixedHull) (p:rest) = let
-      makesRightTurn = ensureRightTurn [p,b,c]
+    convexScan fixedHull Seq.Empty = fixedHull
+    convexScan (_ Seq.:<| Seq.Empty) _ = error "impossible state in ConvexHull: Singleton list"
+    convexScan partialHull@(fixedHull Seq.:|> li' Seq.:|> li) (p Seq.:<| rest) = let
+      makesRightTurn = ensureRightTurn (p,li,li')
       in if makesRightTurn
-         then convexScan (p:b:c:fixedHull) rest -- continue on
-         else convexScan (c:fixedHull) (p:rest) -- Drop the "middle" (b) element and retry
-
+         then convexScan (partialHull Seq.:|> p) rest -- continue on
+         else convexScan (fixedHull Seq.:|> li' Seq.:|> p) rest -- Drop the "middle" (b) element and retry
 
     -- This approach ignores when crossProduct == 0, which occurs when the three points
     -- are colinear. This means the resulting hull may include more points that necessary
-    ensureRightTurn [p,li,li'] = let
+    ensureRightTurn xs@(p, li, li') = let
       crossProduct = ((fst li - fst li') * (snd p - snd li')) - ((snd li - snd li') * (fst p - fst li'))
-      in (crossProduct <= 0)
+      in crossProduct <= 0
 
 -- problem102 :: IO Int
--- problem102 = do
---  raw <- TIO.readFile "data/p102_triangles.txt"
---  let points = parsePoints raw
---  where
---    parsePoints line = pairs . fmap read T.splitOn (","::T.Text)
---
+problem102 = do
+  raw <- T.lines <$> TIO.readFile "data/p102_triangles.txt"
+  let triangles = parsePoints <$> raw
+      matches = [ 1 | points <- triangles, let hull = convexHull ((0, 0):points), sort points == sort hull]
+  pure $ sum matches
+  where
+    parsePoints :: T.Text -> [(Int, Int)]
+    parsePoints line = pairs . fmap (read . T.unpack) $ T.split (== ',') line
+
 
