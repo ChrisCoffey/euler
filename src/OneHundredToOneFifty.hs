@@ -56,27 +56,33 @@ convexHull points = let
   in unique $ toList (upper <> lower)
   where
     orderedPoints = Seq.fromList $ sortOn fst points
+    (first Seq.:<| _)  =  orderedPoints
 
     convexScan fixedHull Seq.Empty = fixedHull
     convexScan (_ Seq.:<| Seq.Empty) _ = error "impossible state in ConvexHull: Singleton list"
     convexScan partialHull@(fixedHull Seq.:|> li' Seq.:|> li) (p Seq.:<| rest) = let
-      makesRightTurn = ensureRightTurn (p,li,li')
-      in if makesRightTurn
-         then convexScan (partialHull Seq.:|> p) rest -- continue on
-         else convexScan (fixedHull Seq.:|> li' Seq.:|> p) rest -- Drop the "middle" (b) element and retry
+      hullStep = reduceToValidHull (partialHull Seq.:|> p)
+      in convexScan hullStep rest
+
+    reduceToValidHull hull@(fixedHull Seq.:|> li' Seq.:|> li Seq.:|> p) =
+      if ensureRightTurn (p, li, li')
+      then hull
+      else reduceToValidHull (fixedHull Seq.:|> li' Seq.:|> p)
+    reduceToValidHull hull@(Seq.Empty Seq.:|> li' Seq.:|> li) = hull
 
     -- This approach ignores when crossProduct == 0, which occurs when the three points
     -- are colinear. This means the resulting hull may include more points that necessary
     ensureRightTurn xs@(p, li, li') = let
       crossProduct = ((fst li - fst li') * (snd p - snd li')) - ((snd li - snd li') * (fst p - fst li'))
-      in crossProduct <= 0
+      in crossProduct < 0
 
 -- problem102 :: IO Int
 problem102 = do
   raw <- T.lines <$> TIO.readFile "data/p102_triangles.txt"
   let triangles = parsePoints <$> raw
-      matches = [ 1 | points <- triangles, let hull = convexHull ((0, 0):points), sort points == sort hull]
-  pure $ sum matches
+      -- matches = [ 1 | points <- triangles, let hull = convexHull ((0, 0):points), sort points == sort hull]
+      matches = [ points | points <- triangles, let hull = convexHull ((0, 0):points), sort points == sort hull]
+  print $ length matches
   where
     parsePoints :: T.Text -> [(Int, Int)]
     parsePoints line = pairs . fmap (read . T.unpack) $ T.split (== ',') line
